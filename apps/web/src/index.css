@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Obel Mono";
+  src: url("/fonts/ObelMono-VF.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@layer utilities {
+  .font-mono {
+    font-feature-settings: "ss01";
+    letter-spacing: 0;
+  }
+}
+
 @layer base {
   /*
    * Light: warm palette derived from Abyssus Corporation (#fbfaf6 paper, #1c1a15 ink)
