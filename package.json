@@ -1,0 +1,22 @@
+{
+  "name": "penelope",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Self-hosted deployment platform",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @penelope/web dev",
+    "build": "pnpm --filter @penelope/web build",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,css,json}\"",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.8.1"
+  }
+}

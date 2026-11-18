@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Light: warm palette derived from Abyssus Corporation (#fbfaf6 paper, #1c1a15 ink)
+   * Dark: Railway-inspired deep charcoal
+   */
+  :root {
+    --background: 45 60% 97%; /* #fbfaf6 paper  */
+    --foreground: 43 16% 10%; /* #1c1a15 ink    */
+    --card: 44 36% 93%; /* #f4f2ec surface */
+    --card-foreground: 43 16% 10%;
+    --border: 43 29% 88%; /* #ece9e0 line   */
+    --input: 43 29% 88%;
+    --ring: 43 16% 10%;
+    --muted: 44 36% 93%;
+    --muted-foreground: 38 8% 52%; /* #8c887e subtle */
+    --accent: 44 36% 93%;
+    --accent-foreground: 43 16% 10%;
+    --primary: 43 16% 10%;
+    --primary-foreground: 45 60% 97%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 133 54% 40%; /* #2f9e44 signal */
+    --success-foreground: 0 0% 98%;
+    --radius: 6px;
+  }
+
+  .dark {
+    --background: 240 7% 7%; /* #0e0e11 */
+    --foreground: 0 0% 93%; /* #ededed */
+    --card: 240 6% 9%; /* #141416 */
+    --card-foreground: 0 0% 93%;
+    --border: 240 4% 17%; /* #27272a */
+    --input: 240 4% 17%;
+    --ring: 240 4% 44%;
+    --muted: 240 5% 11%; /* #1a1a1d */
+    --muted-foreground: 240 4% 44%; /* #6e6e73 */
+    --accent: 240 4% 14%;
+    --accent-foreground: 0 0% 93%;
+    --primary: 0 0% 93%;
+    --primary-foreground: 240 7% 7%;
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 60% 42%;
+    --success-foreground: 0 0% 98%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  ::selection {
+    @apply bg-foreground text-background;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
