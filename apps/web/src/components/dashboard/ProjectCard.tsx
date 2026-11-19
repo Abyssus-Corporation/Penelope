@@ -1,48 +1,9 @@
 import { Link } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { siGithub } from "simple-icons";
-import { AlertCircle, CheckCircle2, CircleDashed, Clock, GitCommitHorizontal } from "lucide-react";
+import { AlertCircle, CheckCircle2, CircleDashed, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { Project, ServiceStatus } from "@/types/project";
-
-// ─── Tooltip primitive ────────────────────────────────────────────────────────
-
-function Tip({ content, children }: { content: string; children: React.ReactNode }) {
-  const lines = content.split("\n");
-  return (
-    <Tooltip.Root delayDuration={300}>
-      <Tooltip.Trigger asChild>{children}</Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content
-          sideOffset={6}
-          className="z-50 w-max max-w-[320px] animate-fade-in rounded bg-foreground px-2.5 py-1.5 shadow"
-        >
-          {lines.length === 1 ? (
-            <span className="text-[11px] leading-snug text-background">{content}</span>
-          ) : (
-            <ul className="flex w-full flex-col gap-1 overflow-hidden">
-              {lines.map((line, i) => {
-                const [name, ...rest] = line.split(" · ");
-                const label = rest.join(" · ");
-                return (
-                  <li key={i} className="flex min-w-0 items-center justify-between gap-3">
-                    <span className="truncate text-[11px] text-background/80">{name}</span>
-                    {label && (
-                      <span className="shrink-0 text-[10px] tabular-nums text-background/50">
-                        {label}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  );
-}
 
 // ─── Status dot ───────────────────────────────────────────────────────────────
 
@@ -50,7 +11,7 @@ export function StatusDot({ status }: { status: ServiceStatus }) {
   if (status === "building") {
     return (
       <CircleDashed
-        size={12}
+        size={10}
         strokeWidth={2}
         aria-hidden="true"
         className="shrink-0 animate-pulse text-amber-400"
@@ -136,12 +97,11 @@ function statusSummary(project: Project, summary: SummaryStrings): string {
   return summary.allRunning.replace("{n}", String(total));
 }
 
-export function CardStatusIcon({ project }: { project: Project }) {
+function CardStatusBadge({ project }: { project: Project }) {
   const { dashboard: d } = useI18n();
   const hasFailure = project.services.some((s) => s.status === "failed");
   const hasBuilding = project.services.some((s) => s.status === "building");
   const allSleeping = project.services.every((s) => s.status === "sleeping");
-
   const summary = statusSummary(project, d.service.summary);
 
   const badge = (() => {
@@ -175,24 +135,29 @@ export function CardStatusIcon({ project }: { project: Project }) {
   })();
 
   return (
-    <Tip content={summary}>
-      <span aria-hidden="true" className="shrink-0">
-        {badge}
-      </span>
-    </Tip>
+    <Tooltip.Root delayDuration={300}>
+      <Tooltip.Trigger asChild>
+        <span aria-hidden="true" className="shrink-0">
+          {badge}
+        </span>
+      </Tooltip.Trigger>
+      <Tooltip.Portal>
+        <Tooltip.Content
+          sideOffset={6}
+          className="z-50 animate-fade-in rounded bg-foreground px-2.5 py-1.5 text-[11px] text-background shadow"
+        >
+          {summary}
+        </Tooltip.Content>
+      </Tooltip.Portal>
+    </Tooltip.Root>
   );
 }
 
 // ─── Project card ─────────────────────────────────────────────────────────────
 
 export function ProjectCard({ project }: { project: Project }) {
-  const t = useI18n();
-  const d = t.dashboard;
-
+  const { dashboard: d } = useI18n();
   const hasFailure = project.services.some((s) => s.status === "failed");
-  const serviceListTooltip = project.services
-    .map((s) => `${s.name} · ${d.service[s.status]}`)
-    .join("\n");
 
   return (
     <Tooltip.Provider>
@@ -200,7 +165,7 @@ export function ProjectCard({ project }: { project: Project }) {
         to={`/projects/${project.id}`}
         aria-label={`${project.name} — ${statusSummary(project, d.service.summary)}`}
         className={cn(
-          "group flex flex-col gap-0 rounded-md border bg-card transition-all duration-150",
+          "group flex flex-col rounded-md border bg-card transition-all duration-150",
           "hover:border-foreground/20 hover:shadow-sm",
           hasFailure ? "border-destructive/25 hover:border-destructive/40" : "border-border",
         )}
@@ -211,47 +176,16 @@ export function ProjectCard({ project }: { project: Project }) {
           <span className="flex-1 truncate text-[14px] font-semibold text-foreground">
             {project.name}
           </span>
-          <CardStatusIcon project={project} />
-        </div>
-
-        {/* Divider */}
-        <div className="mx-4 border-t border-border/60" />
-
-        {/* Commit row */}
-        <div className="flex items-center gap-2 px-4 py-3">
-          <GitCommitHorizontal
-            size={13}
-            strokeWidth={1.5}
-            aria-hidden="true"
-            className="shrink-0 text-muted-foreground/40"
-          />
-          <Tip content={`${project.repo.lastCommit.id}\n${project.repo.lastCommit.message}`}>
-            <span className="truncate font-mono text-[11px] text-muted-foreground/70">
-              {project.repo.lastCommit.message}
-            </span>
-          </Tip>
+          <CardStatusBadge project={project} />
         </div>
 
         {/* Footer */}
         <div className="mx-4 border-t border-border/60" />
         <div className="flex items-center justify-between px-4 py-3">
-          <Tip content={serviceListTooltip}>
-            <div className="group/repo flex min-w-0 items-center gap-1.5">
-              <svg
-                role="img"
-                aria-label="GitHub"
-                viewBox="0 0 24 24"
-                className="size-3.5 shrink-0 fill-muted-foreground/50 transition-colors group-hover/repo:fill-foreground"
-              >
-                <title>GitHub</title>
-                <path d={siGithub.path} />
-              </svg>
-              <span className="truncate font-mono text-[11px] text-muted-foreground/60 underline-offset-2 transition-colors group-hover/repo:text-foreground group-hover/repo:underline">
-                {project.repo.owner}/{project.repo.name}
-              </span>
-            </div>
-          </Tip>
-          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/50">
+          <span className="text-[11px] text-muted-foreground/60">
+            {project.services.length} {d.projects.services}
+          </span>
+          <span className="text-[11px] tabular-nums text-muted-foreground/50">
             {project.deployedAt}
           </span>
         </div>

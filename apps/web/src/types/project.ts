@@ -22,5 +22,5 @@ export interface Project {
   name: string;
   services: Service[];
   deployedAt: string;
-  repo: ProjectRepo;
+  repo?: ProjectRepo;
 }

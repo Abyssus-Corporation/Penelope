@@ -70,14 +70,10 @@ export const en = {
     projects: {
       title: "Projects",
       new: "New project",
-      lastDeployed: "Deployed",
       services: "services",
-      viewAll: "View all",
       empty: "No projects yet.",
       searchPlaceholder: "Search projects…",
       noResults: "No projects matching",
-      svc: "svc",
-      more: "more",
     },
     service: {
       running: "Running",
