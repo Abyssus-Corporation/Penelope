@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { AlertCircle, CheckCircle2, CircleDashed, Clock, Github } from "lucide-react";
+import { siGithub } from "simple-icons";
+import { AlertCircle, CheckCircle2, CircleDashed, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { Project, ServiceStatus } from "@/types/project";
@@ -171,7 +172,12 @@ export function ProjectCard({ project }: { project: Project }) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border pt-3">
           <div className="flex min-w-0 items-center gap-1.5">
-            <Github size={11} strokeWidth={1.5} className="shrink-0 text-muted-foreground/60" />
+            <svg
+              role="img"
+              viewBox="0 0 24 24"
+              className="size-[11px] shrink-0 fill-muted-foreground/60"
+              dangerouslySetInnerHTML={{ __html: siGithub.path }}
+            />
             <span className="truncate font-mono text-[11px] text-muted-foreground/80 transition-colors group-hover:text-muted-foreground">
               {project.repo.owner}/{project.repo.name}
             </span>
