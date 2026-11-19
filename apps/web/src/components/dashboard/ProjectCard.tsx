@@ -175,15 +175,15 @@ export function ProjectCard({ project }: { project: Project }) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border pt-3">
           <Tip content={`${project.repo.lastCommit.id}\n${project.repo.lastCommit.message}`}>
-            <div className="flex min-w-0 items-center gap-1.5">
+            <div className="group/repo flex min-w-0 items-center gap-1.5">
               <svg
                 role="img"
                 viewBox="0 0 24 24"
-                className="size-4 shrink-0 fill-muted-foreground/60"
+                className="size-4 shrink-0 fill-muted-foreground/60 transition-colors group-hover/repo:fill-foreground"
               >
                 <path d={siGithub.path} />
               </svg>
-              <span className="truncate font-mono text-[11px] text-muted-foreground/80 transition-colors group-hover:text-muted-foreground">
+              <span className="truncate font-mono text-[11px] text-muted-foreground/80 underline-offset-2 transition-colors group-hover/repo:text-foreground group-hover/repo:underline">
                 {project.repo.owner}/{project.repo.name}
               </span>
             </div>
