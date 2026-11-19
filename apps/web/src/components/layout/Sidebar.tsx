@@ -276,7 +276,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
                         className={cn(
                           "flex size-6 items-center justify-center rounded transition-colors",
                           "text-muted-foreground/50 hover:text-muted-foreground",
-                          "data-[state=on]:bg-accent data-[state=on]:text-foreground",
+                          "data-[state=on]:bg-foreground data-[state=on]:text-background",
                         )}
                       >
                         <Icon size={12} aria-hidden="true" />
