@@ -11,6 +11,10 @@ export interface ProjectRepo {
   provider: GitProvider;
   owner: string;
   name: string;
+  lastCommit: {
+    id: string;
+    message: string;
+  };
 }
 
 export interface Project {

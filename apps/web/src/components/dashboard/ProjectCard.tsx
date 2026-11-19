@@ -16,20 +16,23 @@ function Tip({ content, children }: { content: string; children: React.ReactNode
       <Tooltip.Portal>
         <Tooltip.Content
           sideOffset={6}
-          className="z-50 max-w-[220px] animate-fade-in rounded bg-foreground px-2.5 py-1.5 shadow"
+          className="z-50 w-max max-w-[320px] animate-fade-in rounded bg-foreground px-2.5 py-1.5 shadow"
         >
           {lines.length === 1 ? (
             <span className="text-[11px] leading-snug text-background">{content}</span>
           ) : (
-            <ul className="flex flex-col gap-1">
+            <ul className="flex w-full flex-col gap-1 overflow-hidden">
               {lines.map((line, i) => {
                 const [name, ...rest] = line.split(" · ");
+                const label = rest.join(" · ");
                 return (
-                  <li key={i} className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-background/80">{name}</span>
-                    <span className="text-[10px] tabular-nums text-background/50">
-                      {rest.join(" · ")}
-                    </span>
+                  <li key={i} className="flex min-w-0 items-center justify-between gap-3">
+                    <span className="truncate text-[11px] text-background/80">{name}</span>
+                    {label && (
+                      <span className="shrink-0 text-[10px] tabular-nums text-background/50">
+                        {label}
+                      </span>
+                    )}
                   </li>
                 );
               })}
@@ -171,17 +174,20 @@ export function ProjectCard({ project }: { project: Project }) {
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border pt-3">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <svg
-              role="img"
-              viewBox="0 0 24 24"
-              className="size-[11px] shrink-0 fill-muted-foreground/60"
-              dangerouslySetInnerHTML={{ __html: siGithub.path }}
-            />
-            <span className="truncate font-mono text-[11px] text-muted-foreground/80 transition-colors group-hover:text-muted-foreground">
-              {project.repo.owner}/{project.repo.name}
-            </span>
-          </div>
+          <Tip content={`${project.repo.lastCommit.id}\n${project.repo.lastCommit.message}`}>
+            <div className="flex min-w-0 items-center gap-1.5">
+              <svg
+                role="img"
+                viewBox="0 0 24 24"
+                className="size-4 shrink-0 fill-muted-foreground/60"
+              >
+                <path d={siGithub.path} />
+              </svg>
+              <span className="truncate font-mono text-[11px] text-muted-foreground/80 transition-colors group-hover:text-muted-foreground">
+                {project.repo.owner}/{project.repo.name}
+              </span>
+            </div>
+          </Tip>
           <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/60">
             {project.deployedAt}
           </span>
