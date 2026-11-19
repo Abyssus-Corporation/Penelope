@@ -30,7 +30,7 @@
     --input: 43 29% 88%;
     --ring: 43 16% 10%;
     --muted: 44 36% 93%;
-    --muted-foreground: 38 8% 52%; /* #8c887e subtle */
+    --muted-foreground: 38 8% 38%; /* #605c55 subtle — 5:1 on paper */
     --accent: 44 36% 93%;
     --accent-foreground: 43 16% 10%;
     --primary: 43 16% 10%;
