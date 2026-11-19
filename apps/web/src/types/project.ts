@@ -5,10 +5,18 @@ export interface Service {
   status: ServiceStatus;
 }
 
+export type GitProvider = "github" | "gitlab" | "bitbucket";
+
+export interface ProjectRepo {
+  provider: GitProvider;
+  owner: string;
+  name: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   services: Service[];
   deployedAt: string;
-  ref: string;
+  repo: ProjectRepo;
 }

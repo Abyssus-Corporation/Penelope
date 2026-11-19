@@ -11,7 +11,7 @@ export const PROJECTS: Project[] = [
       { name: "redis", status: "running" },
     ],
     deployedAt: "4m ago",
-    ref: "main@a3f09c1",
+    repo: { provider: "github", owner: "acme", name: "production" },
   },
   {
     id: "staging",
@@ -22,7 +22,7 @@ export const PROJECTS: Project[] = [
       { name: "postgres", status: "running" },
     ],
     deployedAt: "12m ago",
-    ref: "feat/api@b2e4d1f",
+    repo: { provider: "github", owner: "acme", name: "staging" },
   },
   {
     id: "analytics",
@@ -33,14 +33,14 @@ export const PROJECTS: Project[] = [
       { name: "worker", status: "failed" },
     ],
     deployedAt: "3h ago",
-    ref: "main@7c8a9b2",
+    repo: { provider: "github", owner: "acme", name: "analytics" },
   },
   {
     id: "docs-site",
     name: "docs-site",
     services: [{ name: "web", status: "sleeping" }],
     deployedAt: "2d ago",
-    ref: "main@1d4f5a3",
+    repo: { provider: "github", owner: "acme", name: "docs" },
   },
   {
     id: "preview-pr-42",
@@ -50,7 +50,7 @@ export const PROJECTS: Project[] = [
       { name: "api", status: "running" },
     ],
     deployedAt: "28m ago",
-    ref: "fix/auth@c5d9e1a",
+    repo: { provider: "github", owner: "acme", name: "web" },
   },
   {
     id: "monitoring",
@@ -64,6 +64,6 @@ export const PROJECTS: Project[] = [
       { name: "tempo", status: "sleeping" },
     ],
     deployedAt: "6h ago",
-    ref: "main@9b1c2d4",
+    repo: { provider: "github", owner: "acme", name: "monitoring" },
   },
 ];

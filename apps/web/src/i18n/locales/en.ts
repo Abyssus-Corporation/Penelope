@@ -83,7 +83,6 @@ export const en = {
         failed: "{n} of {total} failed: {names}",
         building: "Building: {names}",
       },
-      deployedFrom: "Deployed from {ref}",
     },
     sidebar: {
       workspace: "Workspace",

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { AlertCircle, CheckCircle2, CircleDashed, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle2, CircleDashed, Clock, Github } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import type { Project, ServiceStatus } from "@/types/project";
@@ -132,7 +132,7 @@ export function ProjectCard({ project }: { project: Project }) {
             {project.name}
           </span>
           <Tip content={serviceListTooltip}>
-            <span className="shrink-0 cursor-default text-[11px] tabular-nums text-muted-foreground/50">
+            <span className="shrink-0 cursor-default text-[11px] tabular-nums text-muted-foreground/70">
               {project.services.length} {d.projects.svc}
             </span>
           </Tip>
@@ -145,7 +145,7 @@ export function ProjectCard({ project }: { project: Project }) {
               <li key={svc.name} className="flex h-5 items-center gap-2">
                 <StatusDot status={svc.status} />
                 <span className="flex-1 truncate text-xs text-muted-foreground">{svc.name}</span>
-                <span className="text-[11px] text-muted-foreground/50">
+                <span className="text-[11px] text-muted-foreground/70">
                   {d.service[svc.status]}
                 </span>
               </li>
@@ -160,7 +160,7 @@ export function ProjectCard({ project }: { project: Project }) {
                   .map((s) => `${s.name} · ${d.service[s.status]}`)
                   .join("\n")}
               >
-                <span className="cursor-default text-xs text-muted-foreground/50 transition-colors hover:text-muted-foreground">
+                <span className="cursor-default text-xs text-muted-foreground/70 transition-colors hover:text-muted-foreground">
                   +{project.services.length - 3} {d.projects.more}
                 </span>
               </Tip>
@@ -170,14 +170,15 @@ export function ProjectCard({ project }: { project: Project }) {
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border pt-3">
-          <span className="text-[11px] text-muted-foreground/60">
-            {d.projects.lastDeployed} <span className="tabular-nums">{project.deployedAt}</span>
-          </span>
-          <Tip content={d.service.deployedFrom.replace("{ref}", project.ref)}>
-            <span className="font-mono text-[10px] tracking-tight text-muted-foreground/40 transition-colors group-hover:text-muted-foreground/70">
-              {project.ref}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Github size={11} strokeWidth={1.5} className="shrink-0 text-muted-foreground/60" />
+            <span className="truncate font-mono text-[11px] text-muted-foreground/80 transition-colors group-hover:text-muted-foreground">
+              {project.repo.owner}/{project.repo.name}
             </span>
-          </Tip>
+          </div>
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/60">
+            {project.deployedAt}
+          </span>
         </div>
       </Link>
     </Tooltip.Provider>
