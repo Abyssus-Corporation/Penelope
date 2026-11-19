@@ -49,9 +49,9 @@
     --card-foreground: 0 0% 93%;
     --border: 240 4% 17%; /* #27272a */
     --input: 240 4% 17%;
-    --ring: 240 4% 44%;
+    --ring: 240 5% 50%;
     --muted: 240 5% 11%; /* #1a1a1d */
-    --muted-foreground: 240 4% 44%; /* #6e6e73 */
+    --muted-foreground: 240 5% 50%; /* #7d7d82 — bumped for 5:1 on dark bg */
     --accent: 240 4% 14%;
     --accent-foreground: 0 0% 93%;
     --primary: 0 0% 93%;
@@ -94,5 +94,16 @@
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

@@ -49,7 +49,12 @@ function Tip({ content, children }: { content: string; children: React.ReactNode
 export function StatusDot({ status }: { status: ServiceStatus }) {
   if (status === "building") {
     return (
-      <CircleDashed size={12} strokeWidth={2} className="shrink-0 animate-pulse text-amber-400" />
+      <CircleDashed
+        size={12}
+        strokeWidth={2}
+        aria-hidden="true"
+        className="shrink-0 animate-pulse text-amber-400"
+      />
     );
   }
 
@@ -60,7 +65,10 @@ export function StatusDot({ status }: { status: ServiceStatus }) {
   };
 
   return (
-    <span className={cn("size-1.5 shrink-0 rounded-full", color[status as keyof typeof color])} />
+    <span
+      aria-hidden="true"
+      className={cn("size-1.5 shrink-0 rounded-full", color[status as keyof typeof color])}
+    />
   );
 }
 
@@ -94,17 +102,36 @@ export function CardStatusIcon({ project }: { project: Project }) {
   const hasBuilding = project.services.some((s) => s.status === "building");
   const allSleeping = project.services.every((s) => s.status === "sleeping");
 
+  const summary = statusSummary(project, d.service.summary);
+
   const icon = (() => {
-    if (hasFailure) return <AlertCircle size={14} className="shrink-0 text-destructive" />;
+    if (hasFailure)
+      return <AlertCircle size={14} aria-hidden="true" className="shrink-0 text-destructive" />;
     if (hasBuilding)
       return (
-        <CircleDashed size={14} strokeWidth={2} className="shrink-0 animate-pulse text-amber-400" />
+        <CircleDashed
+          size={14}
+          strokeWidth={2}
+          aria-hidden="true"
+          className="shrink-0 animate-pulse text-amber-400"
+        />
       );
-    if (allSleeping) return <Clock size={14} className="shrink-0 text-muted-foreground/50" />;
-    return <CheckCircle2 size={14} className="shrink-0 text-success" />;
+    if (allSleeping)
+      return <Clock size={14} aria-hidden="true" className="shrink-0 text-muted-foreground/50" />;
+    return <CheckCircle2 size={14} aria-hidden="true" className="shrink-0 text-success" />;
   })();
 
-  return <Tip content={statusSummary(project, d.service.summary)}>{icon}</Tip>;
+  return (
+    <Tip content={summary}>
+      <span
+        tabIndex={0}
+        aria-label={summary}
+        className="rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {icon}
+      </span>
+    </Tip>
+  );
 }
 
 // ─── Project card ─────────────────────────────────────────────────────────────
@@ -123,6 +150,7 @@ export function ProjectCard({ project }: { project: Project }) {
     <Tooltip.Provider>
       <Link
         to={`/projects/${project.id}`}
+        aria-label={project.name}
         className={cn(
           "group flex flex-col gap-3 rounded-md border bg-card p-4 transition-all duration-150",
           "hover:border-foreground/25 hover:bg-accent",
@@ -136,7 +164,10 @@ export function ProjectCard({ project }: { project: Project }) {
             {project.name}
           </span>
           <Tip content={serviceListTooltip}>
-            <span className="shrink-0 cursor-default text-[11px] tabular-nums text-muted-foreground/70">
+            <span
+              tabIndex={0}
+              className="shrink-0 cursor-default rounded text-[11px] tabular-nums text-muted-foreground/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
               {project.services.length} {d.projects.svc}
             </span>
           </Tip>
@@ -164,7 +195,10 @@ export function ProjectCard({ project }: { project: Project }) {
                   .map((s) => `${s.name} · ${d.service[s.status]}`)
                   .join("\n")}
               >
-                <span className="cursor-default text-xs text-muted-foreground/70 transition-colors hover:text-muted-foreground">
+                <span
+                  tabIndex={0}
+                  className="cursor-default rounded text-xs text-muted-foreground/70 transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
                   +{project.services.length - 3} {d.projects.more}
                 </span>
               </Tip>
@@ -175,12 +209,19 @@ export function ProjectCard({ project }: { project: Project }) {
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border pt-3">
           <Tip content={`${project.repo.lastCommit.id}\n${project.repo.lastCommit.message}`}>
-            <div className="group/repo flex min-w-0 items-center gap-1.5">
+            <div
+              tabIndex={0}
+              role="button"
+              aria-label={`${project.repo.owner}/${project.repo.name} — last commit`}
+              className="group/repo flex min-w-0 items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
               <svg
                 role="img"
+                aria-label="GitHub"
                 viewBox="0 0 24 24"
                 className="size-4 shrink-0 fill-muted-foreground/60 transition-colors group-hover/repo:fill-foreground"
               >
+                <title>GitHub</title>
                 <path d={siGithub.path} />
               </svg>
               <span className="truncate font-mono text-[11px] text-muted-foreground/80 underline-offset-2 transition-colors group-hover/repo:text-foreground group-hover/repo:underline">

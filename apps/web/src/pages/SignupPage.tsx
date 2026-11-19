@@ -55,6 +55,9 @@ function RequiredMark() {
 function StepDots({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center gap-1.5">
+      <span className="sr-only">
+        Step {current} of {total}
+      </span>
       {Array.from({ length: total }, (_, i) => (
         <div
           key={i}
@@ -85,7 +88,11 @@ function StepHeading({ title, subtitle }: { title: string; subtitle: string }) {
 function PasswordChecklist({ value, showErrors }: { value: string; showErrors: boolean }) {
   if (!value) return null;
   return (
-    <ul className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5">
+    <ul
+      aria-live="polite"
+      aria-atomic="false"
+      className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5"
+    >
       {PASSWORD_RULES.map((rule) => {
         const met = rule.test(value);
         const isError = showErrors && !met;
@@ -97,7 +104,11 @@ function PasswordChecklist({ value, showErrors }: { value: string; showErrors: b
               met ? "text-success" : isError ? "text-destructive" : "text-muted-foreground",
             )}
           >
-            {met ? <Check className="size-3 shrink-0" /> : <X className="size-3 shrink-0" />}
+            {met ? (
+              <Check className="size-3 shrink-0" aria-hidden="true" />
+            ) : (
+              <X className="size-3 shrink-0" aria-hidden="true" />
+            )}
             {rule.label}
           </li>
         );
@@ -351,9 +362,9 @@ export function SignupPage() {
                   <button
                     type="button"
                     onClick={back}
-                    className="flex w-full items-center justify-center gap-1.5 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    className="flex w-full items-center justify-center gap-1.5 rounded py-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                   >
-                    <ArrowLeft className="size-3.5" />
+                    <ArrowLeft className="size-3.5" aria-hidden="true" />
                     {s.instance.back}
                   </button>
                 </div>
@@ -378,7 +389,7 @@ export function SignupPage() {
                 </div>
 
                 <Button size="lg" className="w-full" onClick={() => navigate("/dashboard")}>
-                  <Check className="size-4" />
+                  <Check className="size-4" aria-hidden="true" />
                   {s.done.cta}
                 </Button>
               </div>
@@ -386,8 +397,11 @@ export function SignupPage() {
           )}
         </div>
 
-        {/* ── Right: side panel ── */}
-        <div className="relative hidden aspect-[4/3.6] animate-rise [animation-delay:120ms] lg:block">
+        {/* ── Right: side panel (decorative) ── */}
+        <div
+          className="relative hidden aspect-[4/3.6] animate-rise [animation-delay:120ms] lg:block"
+          aria-hidden="true"
+        >
           <SignupSidePanel />
         </div>
       </main>

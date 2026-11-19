@@ -67,13 +67,16 @@ export function LoginPage() {
       <main className="mx-auto grid w-full max-w-[1200px] flex-1 items-center gap-12 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
         {/* ── Left: form ── */}
         <div className="mx-auto w-full max-w-sm animate-rise lg:mx-0">
-          <h1 className="text-balance font-display text-[2.25rem] font-light leading-[1.07] tracking-[-0.045em] sm:text-[2.6rem]">
+          <h1
+            id="login-heading"
+            className="text-balance font-display text-[2.25rem] font-light leading-[1.07] tracking-[-0.045em] sm:text-[2.6rem]"
+          >
             <span className="block text-foreground">Sign in,</span>
             <span className="block text-muted-foreground">welcome back.</span>
           </h1>
 
           <div className="mt-10 space-y-5">
-            <form className="space-y-4">
+            <form aria-labelledby="login-heading" className="space-y-4">
               <div className="space-y-1.5">
                 <label htmlFor="email" className="text-sm font-medium text-foreground">
                   {a.email}
@@ -125,8 +128,11 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* ── Right: side panel ── */}
-        <div className="relative hidden aspect-[4/3.6] animate-rise [animation-delay:120ms] lg:block">
+        {/* ── Right: side panel (decorative) ── */}
+        <div
+          className="relative hidden aspect-[4/3.6] animate-rise [animation-delay:120ms] lg:block"
+          aria-hidden="true"
+        >
           <SidePanel />
         </div>
       </main>

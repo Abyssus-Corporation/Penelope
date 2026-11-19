@@ -100,6 +100,7 @@ function NavItem({
         <Icon
           size={15}
           strokeWidth={active ? 2 : 1.5}
+          aria-hidden="true"
           className={active ? "text-foreground" : "text-muted-foreground"}
         />
         {!collapsed && <span className="text-[13px]">{label}</span>}
@@ -130,7 +131,11 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
               <span className="flex-1 truncate text-left text-[13px] font-medium text-foreground">
                 {t.brand.name}
               </span>
-              <ChevronsUpDown size={13} className="shrink-0 text-muted-foreground" />
+              <ChevronsUpDown
+                size={13}
+                aria-hidden="true"
+                className="shrink-0 text-muted-foreground"
+              />
             </>
           )}
         </button>
@@ -185,23 +190,36 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
               <Search
                 size={12}
                 strokeWidth={1.5}
+                aria-hidden="true"
                 className="pointer-events-none absolute left-2.5 text-muted-foreground/40"
               />
               <input
-                type="text"
+                type="search"
                 placeholder={t.dashboard.sidebar.searchPlaceholder}
-                className="h-[28px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-foreground/30 focus:outline-none"
+                aria-label={t.dashboard.sidebar.searchPlaceholder}
+                className="h-[28px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               />
             </div>
           </div>
         )}
 
         {/* Nav */}
-        <nav className="flex flex-1 flex-col overflow-y-auto px-2 py-3">
+        <nav
+          aria-label="Main navigation"
+          className="flex flex-1 flex-col overflow-y-auto px-2 py-3"
+        >
           {NAV_GROUPS.map((group, gi) => (
-            <div key={group.key} className={cn("flex flex-col gap-0.5", gi > 0 && "mt-5")}>
+            <div
+              key={group.key}
+              role="group"
+              aria-label={nav.groups[group.key]}
+              className={cn("flex flex-col gap-0.5", gi > 0 && "mt-5")}
+            >
               {!collapsed && (
-                <span className="mb-1 px-2.5 text-[11px] text-muted-foreground/50">
+                <span
+                  aria-hidden="true"
+                  className="mb-1 px-2.5 text-[11px] text-muted-foreground/50"
+                >
                   {nav.groups[group.key]}
                 </span>
               )}
@@ -239,7 +257,11 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
                       <span className="flex-1 truncate text-left text-[12px] text-muted-foreground">
                         {t.auth.login.emailPlaceholder}
                       </span>
-                      <ChevronsUpDown size={12} className="shrink-0 text-muted-foreground/50" />
+                      <ChevronsUpDown
+                        size={12}
+                        aria-hidden="true"
+                        className="shrink-0 text-muted-foreground/50"
+                      />
                     </>
                   )}
                 </button>
@@ -257,7 +279,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
                   className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-muted-foreground outline-none transition-colors data-[highlighted]:bg-accent data-[highlighted]:text-foreground"
                   onSelect={() => {}}
                 >
-                  <LogOut size={13} />
+                  <LogOut size={13} aria-hidden="true" />
                   {nav.signOut}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>

@@ -36,14 +36,18 @@ export function DashboardPage() {
     <div className="flex h-screen bg-background">
       <Sidebar collapsed={collapsed} />
 
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex flex-1 flex-col overflow-hidden outline-none"
+      >
         {/* Header */}
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
           {/* Left: collapse + title */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setCollapsed((c) => !c)}
-              className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed ? (
@@ -70,11 +74,12 @@ export function DashboardPage() {
                 className="pointer-events-none absolute left-2.5 text-muted-foreground/50"
               />
               <input
-                type="text"
+                type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={d.projects.searchPlaceholder}
-                className="h-[30px] w-[200px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus:border-foreground/30 focus:outline-none"
+                aria-label={d.projects.searchPlaceholder}
+                className="h-[30px] w-[200px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               />
             </div>
 
@@ -83,6 +88,7 @@ export function DashboardPage() {
               type="single"
               value={size}
               onValueChange={(v) => v && setSize(v as CardSize)}
+              aria-label="Card size"
               className="flex h-[30px] items-center rounded border border-border bg-transparent p-0.5"
             >
               {(
@@ -97,7 +103,7 @@ export function DashboardPage() {
                   value={value}
                   aria-label={label}
                   className={cn(
-                    "flex size-[22px] items-center justify-center rounded transition-colors",
+                    "flex size-6 items-center justify-center rounded transition-colors",
                     "text-muted-foreground/50 hover:text-muted-foreground",
                     "data-[state=on]:bg-accent data-[state=on]:text-foreground",
                   )}
@@ -108,8 +114,8 @@ export function DashboardPage() {
             </ToggleGroup.Root>
 
             {/* New project */}
-            <button className="flex h-[30px] items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90">
-              <Plus size={12} />
+            <button className="flex h-[30px] items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
+              <Plus size={12} aria-hidden="true" />
               {d.projects.new}
             </button>
           </div>
