@@ -79,7 +79,7 @@ export function DashboardPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={d.projects.searchPlaceholder}
                 aria-label={d.projects.searchPlaceholder}
-                className="h-[30px] w-[200px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                className="h-[30px] w-[280px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               />
             </div>
 

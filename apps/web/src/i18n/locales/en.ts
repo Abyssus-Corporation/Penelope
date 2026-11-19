@@ -55,6 +55,13 @@ export const en = {
       settings: "Settings",
       usage: "Usage",
       signOut: "Sign out",
+      account: "Account settings",
+      theme: "Theme",
+      themeLight: "Light",
+      themeDark: "Dark",
+      themeSystem: "System",
+      openUserMenu: "Open user menu",
+      openWorkspaceMenu: "Open workspace menu",
       groups: {
         general: "General",
         admin: "Admin",
@@ -82,6 +89,12 @@ export const en = {
         allSleeping: "All services sleeping",
         failed: "{n} of {total} failed: {names}",
         building: "Building: {names}",
+      },
+      badge: {
+        ready: "Ready",
+        building: "Building",
+        error: "Error",
+        idle: "Idle",
       },
     },
     sidebar: {
