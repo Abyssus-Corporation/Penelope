@@ -33,6 +33,9 @@ pub async fn healthz() -> Json<HealthResponse> {
     Json(HealthResponse { status: "ok" })
 }
 
+/// Upper bound for the readiness probe, including connection acquire.
+const READY_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
 /// Readiness probe. Succeeds only when the database accepts a query.
 #[utoipa::path(
     get,
@@ -44,9 +47,16 @@ pub async fn healthz() -> Json<HealthResponse> {
     )
 )]
 pub async fn readyz(State(state): State<AppState>) -> Result<Json<ReadyResponse>, AppError> {
-    sqlx::query("SELECT 1")
-        .execute(&state.pool)
-        .await
-        .map_err(|_| AppError::Unavailable("database is unreachable".to_string()))?;
-    Ok(Json(ReadyResponse { status: "ready" }))
+    let check = sqlx::query("SELECT 1").execute(&state.pool);
+    match tokio::time::timeout(READY_CHECK_TIMEOUT, check).await {
+        Ok(Ok(_)) => Ok(Json(ReadyResponse { status: "ready" })),
+        Ok(Err(error)) => {
+            tracing::warn!(error = %error, "readiness check failed");
+            Err(AppError::Unavailable("database is unreachable".to_string()))
+        }
+        Err(_) => {
+            tracing::warn!("readiness check timed out");
+            Err(AppError::Unavailable("database is unreachable".to_string()))
+        }
+    }
 }

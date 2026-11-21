@@ -4,6 +4,8 @@
 //! `cargo test -p api -- --ignored` after `docker compose up -d db`
 //! and a valid `DATABASE_URL`.
 
+use std::time::{Duration, Instant};
+
 use api::{db, openapi, state::AppState};
 use axum::{
     body::Body,
@@ -165,4 +167,34 @@ async fn readyz_returns_ok_when_the_database_is_reachable() {
         .expect("router should respond");
     assert_eq!(response.status(), StatusCode::OK);
     assert_security_headers(&response);
+}
+
+#[tokio::test]
+async fn trailing_slash_on_healthz_is_unauthorized() {
+    let response = request(Method::GET, "/healthz/").await;
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_ne!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn readyz_returns_unavailable_when_the_database_does_not_respond() {
+    let pool = db::lazy_pool("postgres://penelope:penelope@10.255.255.1:5432/penelope")
+        .expect("test database URL should parse");
+    let app = api::app(AppState { pool });
+    let started = Instant::now();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/readyz")
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("router should respond");
+    let elapsed = started.elapsed();
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    assert!(
+        elapsed < Duration::from_secs(4),
+        "readiness probe hung for {elapsed:?}"
+    );
 }
