@@ -59,7 +59,7 @@
     --accent-foreground: 0 0% 93%;
     --primary: 0 0% 93%;
     --primary-foreground: 240 7% 7%;
-    --destructive: 0 63% 62%; /* 4.6:1 on its 10% tint */
+    --destructive: 0 63% 66%; /* 5.1:1 on its 10% tint over card, 5.1:1 on accent */
     --destructive-foreground: 240 7% 7%;
     --success: 142 60% 42%;
     --success-foreground: 0 0% 98%;
