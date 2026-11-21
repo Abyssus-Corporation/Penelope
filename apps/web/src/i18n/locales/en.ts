@@ -174,6 +174,7 @@ export const en = {
     errorTitle: "Couldn't load this project",
     error: "Check your connection and try again.",
     retry: "Try again",
+    backToProjects: "Back to projects",
   },
   errors: {
     notFoundTitle: "Page not found",
