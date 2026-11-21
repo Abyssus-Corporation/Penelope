@@ -75,6 +75,10 @@ export const en = {
       new: "New project",
       services: { one: "{n} service", other: "{n} services" },
       empty: "No projects yet.",
+      loading: "Loading projects…",
+      unavailableTitle: "Projects aren't available",
+      unavailable:
+        "This build isn't connected to the Penelope API yet, so there are no projects to show.",
       searchPlaceholder: "Search projects…",
       noResults: "No projects matching",
       create: {
