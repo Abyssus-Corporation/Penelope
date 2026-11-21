@@ -31,8 +31,9 @@ See [`SECURITY.md`](../../SECURITY.md) for the public statement of the trust mod
     scripts are limited by the `allowBuilds` allowlist in `pnpm-workspace.yaml` (only `esbuild`).
   - `pnpm typecheck` runs `tsc --noEmit` against a solution-style `tsconfig.json` (`"files": []`), so
     it checks nothing.
-  - `index.html` loads CSS and fonts from Google Fonts and Fontshare without SRI, which blocks a
-    strict CSP and makes a self-hosted install call third parties.
+  - Dashboard fonts (Inter Variable, Sentient, Obel Mono) are self-hosted. A strict CSP is applied
+    by `vite preview` and the reference `deploy/Caddyfile` (`font-src 'self'`, Trusted Types in
+    Report-Only). The Vite dev server does not set a CSP, so HMR keeps working.
   - `/dashboard` has no route guard. That is UX only; real authorization must live in the API.
   - Project names are validated only on the client. Once a name becomes a container, network or DNS
     label, the API must validate it again (RFC 1123: `[a-z0-9-]`, max 63, unique in the database).

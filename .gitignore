@@ -35,3 +35,7 @@ pnpm-debug.log*
 
 # Turbo
 .turbo/
+
+# Test reports
+test-results/
+playwright-report/

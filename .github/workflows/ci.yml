@@ -17,7 +17,7 @@ jobs:
   web:
     name: web
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
@@ -78,6 +78,12 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @penelope/web exec playwright install --with-deps chromium
+
+      - name: End-to-end
+        run: pnpm --filter @penelope/web test:e2e
 
   rust:
     name: rust

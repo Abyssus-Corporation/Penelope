@@ -149,6 +149,8 @@ Penelope uses **pnpm workspaces**:
 Penelope/
 ├── apps/
 │   └── web/                  React SPA
+│       ├── e2e/              Playwright tests against vite preview
+│       ├── public/fonts/     Self-hosted Inter is bundled; Sentient and Obel Mono live here
 │       ├── src/
 │       │   ├── components/   ui/ and dashboard/
 │       │   ├── hooks/        useTheme
@@ -159,8 +161,13 @@ Penelope/
 │       │   └── types/        project.ts
 │       ├── index.html
 │       ├── package.json
+│       ├── playwright.config.ts
+│       ├── security-headers.ts
 │       ├── tailwind.config.ts
 │       └── vite.config.ts
+│
+├── deploy/
+│   └── Caddyfile             Reference TLS proxy, CSP, and cache headers
 │
 ├── packages/                 (planned)
 │
@@ -188,10 +195,21 @@ Penelope/
 pnpm install          # install all workspace dependencies
 pnpm dev              # start the web app dev server (Vite HMR)
 pnpm build            # production build
+pnpm preview          # serve the production build (CSP and cache headers on)
 pnpm typecheck        # TypeScript type-check across all packages
 pnpm lint             # ESLint across all packages
 pnpm format           # Prettier across apps/**
+pnpm test             # Vitest unit tests
+pnpm test:e2e         # Playwright against vite preview
 ```
+
+Dashboard typography is self-hosted (Inter Variable via fontsource, Sentient and Obel Mono in
+`apps/web/public/fonts`), so the production CSP can use `font-src 'self'` and the UI never calls
+Google Fonts or Fontshare. `pnpm dev` does not set a Content-Security-Policy, because Vite HMR
+needs a looser policy. `pnpm preview` and the reference [`deploy/Caddyfile`](deploy/Caddyfile)
+apply the same enforced CSP, Trusted Types in Report-Only, `nosniff`, `Referrer-Policy`,
+`frame-ancestors 'none'`, and cache rules (`no-store` for HTML, immutable long cache for hashed
+`/assets/` and `/fonts/`). The Caddyfile also sets HSTS and `upgrade-insecure-requests` for TLS.
 
 ---
 

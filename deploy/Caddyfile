@@ -1,0 +1,38 @@
+# Reference Caddyfile for serving the built dashboard (`apps/web/dist`)
+# with automatic TLS. Replace the site address before using this in production.
+#
+# Security and cache header values must stay in sync with
+# `apps/web/security-headers.ts` (used by `vite preview`).
+#
+# Differences from the Vite preview server (which speaks HTTP):
+#   - Strict-Transport-Security
+#   - upgrade-insecure-requests on the enforced CSP
+
+{$DASHBOARD_DOMAIN:dashboard.example.com} {
+	encode gzip zstd
+	root * /srv/penelope/dashboard
+	try_files {path} /index.html
+	file_server
+
+	header {
+		Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src 'self'; media-src 'none'; worker-src 'none'; manifest-src 'self'; upgrade-insecure-requests"
+		Content-Security-Policy-Report-Only "require-trusted-types-for 'script'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), display-capture=(), interest-cohort=()"
+		Cross-Origin-Opener-Policy same-origin
+		Cross-Origin-Resource-Policy same-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# SPA routes and index.html must not be cached so a deploy is visible immediately.
+	header Cache-Control "no-store"
+
+	@immutable {
+		path /assets/*
+		path /fonts/*
+	}
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+}

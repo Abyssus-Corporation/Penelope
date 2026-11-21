@@ -1,3 +1,5 @@
+@import "@fontsource-variable/inter/wght.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,6 +8,22 @@
   font-family: "Obel Mono";
   src: url("/fonts/ObelMono-VF.woff2") format("woff2");
   font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sentient";
+  src: url("/fonts/Sentient-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Sentient";
+  src: url("/fonts/Sentient-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
   font-display: swap;
 }
 
