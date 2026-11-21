@@ -79,7 +79,7 @@ export const en = {
         description: "A project groups your services. Give it a name to get started.",
         name: "Project name",
         namePlaceholder: "my-app",
-        nameHint: "Letters, numbers, dots, dashes, underscores and slashes.",
+        nameHint: "Letters, numbers, dots, dashes and underscores.",
         cancel: "Cancel",
         submit: "Create project",
         close: "Close",
@@ -88,7 +88,7 @@ export const en = {
         errors: {
           nameRequired: "Project name is required.",
           nameTooLong: "Use {max} characters or fewer.",
-          nameInvalid: "Start with a letter or number; use only letters, numbers, . - _ /",
+          nameInvalid: "Start with a letter or number; use only letters, numbers, . - _",
           nameTaken: "A project with this name already exists.",
         },
       },

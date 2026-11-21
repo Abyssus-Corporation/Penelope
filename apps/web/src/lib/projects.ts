@@ -1,7 +1,7 @@
 import type { Project } from "@/types/project";
 
 export const PROJECT_NAME_MAX_LENGTH = 48;
-const PROJECT_NAME_PATTERN = /^[a-z0-9][a-z0-9._/-]*$/i;
+const PROJECT_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/i;
 
 export type ProjectNameError = "required" | "tooLong" | "invalid" | "taken";
 
