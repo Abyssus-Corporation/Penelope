@@ -57,7 +57,7 @@ The dashboard renders a live-filtered grid of projects. Each card shows:
 - last deployment time
 - linked Git repository and last commit message, when present
 
-Cards are resizable across three density presets (compact, default, expanded). The header search filters projects in real time. A "New project" button is wired into the layout and ready to connect to a creation flow.
+Cards are resizable across three density presets (compact, default, expanded). The header search filters projects in real time. A "New project" button opens a dialog to create a project by name. New projects live in memory until the API exists.
 
 ### Sidebar
 
@@ -114,7 +114,8 @@ Longer term, Penelope aims to be a credible self-hosted alternative to Railway, 
 - [ ] Project detail page
 - [ ] Service log viewer
 - [ ] Deployment history timeline
-- [ ] New project / new service creation flows
+- [x] New project creation dialog
+- [ ] New service creation flow
 - [ ] In-app settings pages
 - [ ] Team management UI
 - [ ] Usage and metrics views
@@ -158,7 +159,7 @@ Penelope/
 │       │   └── types/        project.ts
 │       ├── index.html
 │       ├── package.json
-│       ├── tailwind.config.js
+│       ├── tailwind.config.ts
 │       └── vite.config.ts
 │
 ├── packages/                 (planned)
@@ -178,7 +179,7 @@ Penelope/
 | pnpm       | `≥ 9`            |
 | React      | `18.3`           |
 | TypeScript | `5.x`            |
-| Vite       | `5.x`            |
+| Vite       | `6.x`            |
 | Tailwind   | `3.4`            |
 
 ### Getting started
