@@ -157,6 +157,7 @@ export const en = {
   },
   project: {
     back: "Projects",
+    breadcrumb: "Breadcrumb",
     loading: "Loading project…",
     services: "Services",
     servicesCount: { one: "{n} service", other: "{n} services" },

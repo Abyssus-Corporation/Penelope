@@ -42,6 +42,11 @@ describe("ProjectPage", () => {
     expect(screen.getByText("Failed")).toBeVisible();
     expect(screen.getByText("acme/app")).toBeVisible();
     expect(screen.getByText("No commits deployed yet.")).toBeVisible();
+    // Rendered inside the dashboard shell: sidebar nav plus a breadcrumb back to Projects.
+    expect(screen.getByRole("complementary")).toBeInTheDocument();
+    const breadcrumb = screen.getByRole("navigation", { name: "Breadcrumb" });
+    expect(breadcrumb).toHaveTextContent("Projectsacme");
+    expect(breadcrumb.querySelector('[aria-current="page"]')).toHaveTextContent("acme");
   });
 
   it("shows empty states for a project without services or repository", async () => {

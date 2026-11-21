@@ -1,13 +1,10 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/i18n";
 
 /** Wordmark header plus a single-column main, for pages outside the dashboard. */
 export function PageShell({ children }: { children: ReactNode }) {
   const t = useI18n();
-  // Applies the stored theme; without it these pages stay light until the dashboard mounts.
-  useTheme();
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="border-b border-border">

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, GitBranch } from "lucide-react";
+import { ChevronRight, GitBranch } from "lucide-react";
 import { api, type ApiProject } from "@/api";
 import { StatusDot } from "@/components/dashboard/ProjectCard";
-import { PageShell } from "@/components/layout/PageShell";
+import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 
@@ -56,53 +56,74 @@ export function ProjectPage() {
   const p = t.project;
   const [state, retry] = useProject(id);
 
+  const crumb =
+    state.status === "ready"
+      ? state.project.name
+      : state.status === "not-found"
+        ? p.notFoundTitle
+        : state.status === "error"
+          ? p.errorTitle
+          : p.loading;
+
   return (
-    <PageShell>
-      <div className="mx-auto w-full max-w-3xl">
-        <Link
-          to="/dashboard"
-          className="inline-flex items-center gap-1.5 rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          {p.back}
-        </Link>
-
-        <div className="mt-6">
-          {state.status === "loading" && (
-            <div role="status" aria-live="polite">
-              <h1 className="sr-only">{p.loading}</h1>
-              <div aria-hidden="true" className="space-y-6">
-                <div className="h-9 w-2/3 rounded bg-muted" />
-                <div className="h-4 w-1/3 rounded bg-muted" />
-                <div className={`${SECTION} h-40`} />
-                <div className={`${SECTION} h-24`} />
-              </div>
+    <AppShell
+      header={
+        <nav aria-label={p.breadcrumb}>
+          <ol className="flex min-w-0 items-center gap-1.5 text-[14px]">
+            <li className="shrink-0">
+              <Link
+                to="/dashboard"
+                className="rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {p.back}
+              </Link>
+            </li>
+            <li aria-hidden="true" className="shrink-0 text-muted-foreground">
+              <ChevronRight size={14} strokeWidth={1.5} />
+            </li>
+            {/* Truncated here only; the h1 below always shows the full name. */}
+            <li aria-current="page" className="min-w-0 truncate font-semibold text-foreground">
+              {crumb}
+            </li>
+          </ol>
+        </nav>
+      }
+    >
+      <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+        {state.status === "loading" && (
+          <div role="status" aria-live="polite">
+            <h1 className="sr-only">{p.loading}</h1>
+            <div aria-hidden="true" className="space-y-6">
+              <div className="h-9 w-2/3 rounded bg-muted" />
+              <div className="h-4 w-1/3 rounded bg-muted" />
+              <div className={`${SECTION} h-40`} />
+              <div className={`${SECTION} h-24`} />
             </div>
-          )}
+          </div>
+        )}
 
-          {state.status === "error" && (
-            <div className="max-w-md">
-              <h1 className={H1}>{p.errorTitle}</h1>
-              <p className="mt-3 text-[15px] text-muted-foreground">{p.error}</p>
-              <Button type="button" className="mt-6" onClick={retry}>
-                {p.retry}
-              </Button>
-            </div>
-          )}
+        {state.status === "error" && (
+          <div className="max-w-md">
+            <h1 className={H1}>{p.errorTitle}</h1>
+            <p className="mt-3 text-[15px] text-muted-foreground">{p.error}</p>
+            <Button type="button" className="mt-6" onClick={retry}>
+              {p.retry}
+            </Button>
+          </div>
+        )}
 
-          {state.status === "not-found" && (
-            <div className="max-w-md">
-              <h1 className={H1}>{p.notFoundTitle}</h1>
-              <p className="mt-3 break-words text-[15px] text-muted-foreground">
-                {p.notFound.replace("{id}", id)}
-              </p>
-            </div>
-          )}
+        {state.status === "not-found" && (
+          <div className="max-w-md">
+            <h1 className={H1}>{p.notFoundTitle}</h1>
+            <p className="mt-3 break-words text-[15px] text-muted-foreground">
+              {p.notFound.replace("{id}", id)}
+            </p>
+          </div>
+        )}
 
-          {state.status === "ready" && <ProjectDetails project={state.project} />}
-        </div>
+        {state.status === "ready" && <ProjectDetails project={state.project} />}
       </div>
-    </PageShell>
+    </AppShell>
   );
 }
 

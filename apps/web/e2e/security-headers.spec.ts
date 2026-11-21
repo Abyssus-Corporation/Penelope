@@ -159,6 +159,13 @@ test.describe("pages under the production CSP", () => {
     await expect(page).toHaveURL(/\/projects\/acme-production$/);
     await expect(page.getByRole("heading", { level: 1, name: "acme-production" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Services" })).toBeVisible();
+    // Same dashboard shell as /dashboard: sidebar with Projects, plus a breadcrumb.
+    await expect(
+      page.getByRole("complementary").getByRole("link", { name: "Projects" }),
+    ).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
+      "acme-production",
+    );
     assertNoSecurityViolations(await signals.readViolations());
     expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
   });
