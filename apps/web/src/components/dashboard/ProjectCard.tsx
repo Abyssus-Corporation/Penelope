@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { AlertCircle, CheckCircle2, CircleDashed, Clock } from "lucide-react";
+import { AlertCircle, Box, CheckCircle2, CircleDashed, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { formatRelativeTime, plural } from "@/i18n/format";
+import { projectInitials, statusSummary } from "./project-summary";
 import type { Project, ServiceStatus } from "@/types/project";
 
 // ─── Status dot ───────────────────────────────────────────────────────────────
@@ -53,13 +55,7 @@ function projectColor(name: string) {
 }
 
 function ProjectAvatar({ name }: { name: string }) {
-  const initials = name
-    .replace(/[^a-z0-9]/gi, " ")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
+  const initials = projectInitials(name);
   return (
     <span
       aria-hidden="true"
@@ -68,43 +64,29 @@ function ProjectAvatar({ name }: { name: string }) {
         projectColor(name),
       )}
     >
-      {initials || name.slice(0, 2).toUpperCase()}
+      {initials || <Box size={15} strokeWidth={1.5} />}
     </span>
   );
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
-type SummaryStrings = { allRunning: string; allSleeping: string; failed: string; building: string };
-
-function statusSummary(project: Project, summary: SummaryStrings): string {
-  const failed = project.services.filter((s) => s.status === "failed");
-  const building = project.services.filter((s) => s.status === "building");
-  const total = project.services.length;
-
-  if (failed.length > 0) {
-    return summary.failed
-      .replace("{n}", String(failed.length))
-      .replace("{total}", String(total))
-      .replace("{names}", failed.map((s) => s.name).join(", "));
-  }
-  if (building.length > 0) {
-    return summary.building.replace("{names}", building.map((s) => s.name).join(", "));
-  }
-  if (project.services.every((s) => s.status === "sleeping")) {
-    return summary.allSleeping;
-  }
-  return summary.allRunning.replace("{n}", String(total));
-}
-
 function CardStatusBadge({ project }: { project: Project }) {
-  const { dashboard: d } = useI18n();
+  const { dashboard: d, locale } = useI18n();
+  const isEmpty = project.services.length === 0;
   const hasFailure = project.services.some((s) => s.status === "failed");
   const hasBuilding = project.services.some((s) => s.status === "building");
   const allSleeping = project.services.every((s) => s.status === "sleeping");
-  const summary = statusSummary(project, d.service.summary);
+  const summary = statusSummary(project, d.service.summary, locale);
 
   const badge = (() => {
+    if (isEmpty)
+      return (
+        <span className="flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+          <Box size={11} aria-hidden="true" />
+          {d.service.badge.empty}
+        </span>
+      );
     if (hasFailure)
       return (
         <span className="flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
@@ -156,40 +138,55 @@ function CardStatusBadge({ project }: { project: Project }) {
 // ─── Project card ─────────────────────────────────────────────────────────────
 
 export function ProjectCard({ project }: { project: Project }) {
-  const { dashboard: d } = useI18n();
+  const { dashboard: d, locale } = useI18n();
   const hasFailure = project.services.some((s) => s.status === "failed");
+  const deployed = formatRelativeTime(locale, project.deployedAt, d.justNow);
 
   return (
-    <Tooltip.Provider>
-      <Link
-        to={`/projects/${project.id}`}
-        aria-label={`${project.name} — ${statusSummary(project, d.service.summary)}`}
-        className={cn(
-          "group flex flex-col rounded-md border bg-card transition-all duration-150",
-          "hover:border-foreground/20 hover:shadow-sm",
-          hasFailure ? "border-destructive/25 hover:border-destructive/40" : "border-border",
-        )}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4">
-          <ProjectAvatar name={project.name} />
-          <span className="flex-1 truncate text-[14px] font-semibold text-foreground">
+    <Link
+      to={`/projects/${project.id}`}
+      aria-label={`${project.name} — ${statusSummary(project, d.service.summary, locale)}`}
+      className={cn(
+        "group flex flex-col rounded-md border bg-card transition-all duration-150",
+        // Skip layout and paint for off-screen cards; large project lists stay responsive.
+        "content-auto",
+        "hover:border-foreground/20 hover:shadow-sm",
+        hasFailure ? "border-destructive/25 hover:border-destructive/40" : "border-border",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start gap-3 p-4">
+        <ProjectAvatar name={project.name} />
+        {/* Wrap instead of truncating: lookalike names often differ only at the end. */}
+        <span className="flex min-h-9 min-w-0 flex-1 items-center">
+          <span
+            title={project.name}
+            className="line-clamp-4 break-words text-[14px] font-semibold text-foreground"
+          >
             {project.name}
           </span>
+        </span>
+        <span className="flex h-9 shrink-0 items-center">
           <CardStatusBadge project={project} />
-        </div>
+        </span>
+      </div>
 
-        {/* Footer */}
-        <div className="mx-4 border-t border-border/60" />
-        <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[11px] text-muted-foreground/60">
-            {project.services.length} {d.projects.services}
-          </span>
-          <span className="text-[11px] tabular-nums text-muted-foreground/50">
-            {project.deployedAt}
-          </span>
-        </div>
-      </Link>
-    </Tooltip.Provider>
+      {/* Footer */}
+      <div className="mx-4 border-t border-border/60" />
+      <div className="flex items-center justify-between px-4 py-3">
+        <span className="text-[11px] text-muted-foreground/60">
+          {plural(locale, d.projects.services, project.services.length)}
+        </span>
+        {deployed && (
+          <time
+            dateTime={project.deployedAt}
+            title={deployed.absolute}
+            className="text-[11px] tabular-nums text-muted-foreground/50"
+          >
+            {deployed.relative}
+          </time>
+        )}
+      </div>
+    </Link>
   );
 }
