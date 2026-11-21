@@ -77,6 +77,19 @@ export function ServiceSourceLine({
 
 export function ServiceStatusLabel({ service }: { service: CanvasService }) {
   const t = useI18n();
+  if (service.status === null) {
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-muted-foreground">
+        <span className="flex size-2.5 items-center justify-center">
+          <span
+            aria-hidden="true"
+            className="size-1.5 rounded-full border border-muted-foreground"
+          />
+        </span>
+        {t.project.canvas.notDeployed}
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-foreground">
       <span className="flex size-2.5 items-center justify-center">
@@ -89,6 +102,8 @@ export function ServiceStatusLabel({ service }: { service: CanvasService }) {
 
 export function LastDeploy({ service, className }: { service: CanvasService; className?: string }) {
   const t = useI18n();
+  // A service added here has no status either; "Not deployed" already says it.
+  if (service.status === null) return null;
   const deployed = service.deployedAt
     ? formatRelativeTime(t.locale, service.deployedAt, t.dashboard.justNow)
     : null;

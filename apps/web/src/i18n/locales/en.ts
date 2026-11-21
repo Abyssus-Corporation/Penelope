@@ -194,6 +194,7 @@ export const en = {
       nodeDescription:
         "Press Enter to open this service. Press Space to select it, then use the arrow keys to move it.",
       nodeMoved: "Moved {direction}. Position {x}, {y}.",
+      notDeployed: "Not deployed",
       controls: "Canvas controls",
       zoomIn: "Zoom in",
       zoomOut: "Zoom out",
