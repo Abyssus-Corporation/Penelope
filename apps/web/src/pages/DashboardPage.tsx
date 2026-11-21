@@ -1,8 +1,10 @@
 import { useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import {
   LayoutGrid,
   LayoutList,
+  Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
@@ -11,6 +13,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
+import { formatNumber } from "@/i18n/format";
+import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
@@ -19,11 +23,39 @@ import type { Project } from "@/types/project";
 
 type CardSize = "sm" | "md" | "lg";
 
+// Columns follow the space the grid actually has (the sidebar eats into the viewport),
+// so cards never shrink below a readable width.
 const GRID_COLS: Record<CardSize, string> = {
-  sm: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
-  md: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-  lg: "grid-cols-1 sm:grid-cols-1 lg:grid-cols-2",
+  sm: "grid-cols-cards-sm",
+  md: "grid-cols-cards-md",
+  lg: "grid-cols-cards-lg",
 };
+
+const ICON_BUTTON =
+  "flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
+
+/** Below `md` the sidebar leaves the layout and opens as a modal drawer instead. */
+function MobileNav({ label, title }: { label: string; title: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogPrimitive.Trigger className={cn(ICON_BUTTON, "md:hidden")} aria-label={label}>
+        <Menu size={15} strokeWidth={1.5} aria-hidden="true" />
+      </DialogPrimitive.Trigger>
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          aria-describedby={undefined}
+          onClick={(e) => (e.target as HTMLElement).closest("a") && setOpen(false)}
+          className="fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-background shadow-xl focus:outline-none data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in"
+        >
+          <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
+          <Sidebar collapsed={false} className="w-full" />
+        </DialogPrimitive.Content>
+      </DialogPortal>
+    </Dialog>
+  );
+}
 
 export function DashboardPage() {
   const t = useI18n();
@@ -37,8 +69,8 @@ export function DashboardPage() {
   const filtered = projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar collapsed={collapsed} />
+    <div className="flex h-dvh bg-background">
+      <Sidebar collapsed={collapsed} className="hidden md:flex" />
 
       <main
         id="main-content"
@@ -46,12 +78,14 @@ export function DashboardPage() {
         className="flex flex-1 flex-col overflow-hidden outline-none"
       >
         {/* Header */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-          {/* Left: collapse + title */}
-          <div className="flex items-center gap-3">
+        {/* Below lg the tools drop to a second row so "New project" always stays on screen. */}
+        <header className="flex shrink-0 flex-wrap items-center gap-x-3 border-b border-border px-4 lg:flex-nowrap">
+          {/* Left: menu or collapse + title */}
+          <div className="mr-auto flex h-14 min-w-0 items-center gap-3">
+            <MobileNav label={d.nav.openNavigation} title={d.nav.navigation} />
             <button
               onClick={() => setCollapsed((c) => !c)}
-              className="flex size-7 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              className={cn(ICON_BUTTON, "hidden md:flex")}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed ? (
@@ -63,15 +97,15 @@ export function DashboardPage() {
             <div className="flex items-baseline gap-2">
               <h1 className="text-[14px] font-semibold text-foreground">{d.projects.title}</h1>
               <span className="text-[12px] tabular-nums text-muted-foreground/60">
-                {filtered.length}
+                {formatNumber(t.locale, filtered.length)}
               </span>
             </div>
           </div>
 
-          {/* Right: search + size toggle + new button */}
-          <div className="flex items-center gap-2">
+          {/* Search + size toggle: full-width second row below lg */}
+          <div className="order-last flex w-full items-center gap-2 pb-3 lg:order-none lg:w-auto lg:pb-0">
             {/* Search */}
-            <div className="relative flex items-center">
+            <div className="relative flex min-w-0 flex-1 items-center lg:flex-none">
               <Search
                 size={13}
                 strokeWidth={1.5}
@@ -83,7 +117,7 @@ export function DashboardPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={d.projects.searchPlaceholder}
                 aria-label={d.projects.searchPlaceholder}
-                className="h-[30px] w-[280px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                className="h-[30px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 lg:w-[280px] coarse:text-base"
               />
             </div>
 
@@ -93,7 +127,7 @@ export function DashboardPage() {
               value={size}
               onValueChange={(v) => v && setSize(v as CardSize)}
               aria-label="Card size"
-              className="flex h-[30px] items-center rounded border border-border bg-transparent p-0.5"
+              className="flex h-[30px] shrink-0 items-center rounded border border-border bg-transparent p-0.5"
             >
               {(
                 [
@@ -116,26 +150,26 @@ export function DashboardPage() {
                 </ToggleGroup.Item>
               ))}
             </ToggleGroup.Root>
-
-            {/* New project */}
-            <CreateProjectDialog
-              existingProjects={projects}
-              onCreate={(project) => setProjects((prev) => [project, ...prev])}
-              trigger={
-                <button
-                  type="button"
-                  className="flex h-[30px] items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                >
-                  <Plus size={12} aria-hidden="true" />
-                  {d.projects.new}
-                </button>
-              }
-            />
           </div>
+
+          {/* New project */}
+          <CreateProjectDialog
+            existingProjects={projects}
+            onCreate={(project) => setProjects((prev) => [project, ...prev])}
+            trigger={
+              <button
+                type="button"
+                className="flex h-[30px] shrink-0 items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              >
+                <Plus size={12} aria-hidden="true" />
+                {d.projects.new}
+              </button>
+            }
+          />
         </header>
 
         {/* Projects grid */}
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           {filtered.length === 0 ? (
             <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border">
               <p className="text-sm text-muted-foreground">
