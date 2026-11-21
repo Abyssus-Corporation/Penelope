@@ -5,6 +5,7 @@ import { api, type ApiProject } from "@/api";
 import { StatusDot } from "@/components/dashboard/ProjectCard";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 
 type State =
@@ -55,6 +56,7 @@ export function ProjectPage() {
   const t = useI18n();
   const p = t.project;
   const [state, retry] = useProject(id);
+  const message = state.status === "error" || state.status === "not-found";
 
   const crumb =
     state.status === "ready"
@@ -89,7 +91,13 @@ export function ProjectPage() {
         </nav>
       }
     >
-      <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+      <div
+        className={cn(
+          "mx-auto flex w-full max-w-3xl flex-col px-4 py-6 sm:px-6 sm:py-8",
+          // Fill the content area below AppShell's h-14 header so messages centre in it.
+          message && "min-h-[calc(100dvh-theme(spacing.14))]",
+        )}
+      >
         {state.status === "loading" && (
           <div role="status" aria-live="polite">
             <h1 className="sr-only">{p.loading}</h1>
@@ -103,7 +111,7 @@ export function ProjectPage() {
         )}
 
         {state.status === "error" && (
-          <div className="max-w-md">
+          <div className="m-auto w-full max-w-md text-center">
             <h1 className={H1}>{p.errorTitle}</h1>
             <p className="mt-3 text-[15px] text-muted-foreground">{p.error}</p>
             <Button type="button" className="mt-6" onClick={retry}>
@@ -113,7 +121,7 @@ export function ProjectPage() {
         )}
 
         {state.status === "not-found" && (
-          <div className="max-w-md">
+          <div className="m-auto w-full max-w-md text-center">
             <h1 className={H1}>{p.notFoundTitle}</h1>
             {/* Never echo the URL id: it is attacker-controlled text (content spoofing). */}
             <p className="mt-3 text-[15px] text-muted-foreground">{p.notFound}</p>

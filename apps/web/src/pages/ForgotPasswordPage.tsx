@@ -58,7 +58,7 @@ export function ForgotPasswordPage() {
 
   return (
     <PageShell>
-      <div className="mx-auto w-full max-w-sm lg:mx-0">
+      <div className="m-auto w-full max-w-sm">
         <h1 className="text-balance font-display text-[2.25rem] font-light leading-[1.07] tracking-[-0.045em] sm:text-[2.6rem]">
           <span className="block text-foreground">{f.title}</span>
           <span className="block text-muted-foreground">{f.subtitle}</span>

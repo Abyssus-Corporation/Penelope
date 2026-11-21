@@ -13,12 +13,12 @@ export function ErrorPage() {
 
   return (
     <PageShell>
-      <div className="max-w-md">
+      <div className="m-auto w-full max-w-md text-center">
         <h1 className="text-balance font-display text-[2.25rem] font-light leading-[1.07] tracking-[-0.045em] text-foreground">
           {e.crashTitle}
         </h1>
         <p className="mt-4 text-[15px] text-muted-foreground">{e.crash}</p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Button type="button" onClick={() => window.location.reload()}>
             {e.reload}
           </Button>
