@@ -35,7 +35,7 @@ function SidePanel() {
                 {entry.service}
               </span>
               <span className="flex-1 truncate text-sm text-muted-foreground">{entry.message}</span>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                 {entry.ago}
               </span>
             </li>
@@ -64,7 +64,11 @@ export function LoginPage() {
       </header>
 
       {/* Main — two-column grid matching Signup */}
-      <main className="mx-auto grid w-full max-w-[1200px] flex-1 items-center gap-12 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto grid w-full max-w-[1200px] flex-1 items-center gap-12 px-5 py-14 outline-none sm:px-8 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14"
+      >
         {/* ── Left: form ── */}
         <div className="mx-auto w-full max-w-sm animate-rise lg:mx-0">
           <h1

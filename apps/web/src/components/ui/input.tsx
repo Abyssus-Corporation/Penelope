@@ -4,7 +4,7 @@ import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { useFieldControl } from "./field-context";
 
 const inputVariants = cva(
-  "flex w-full border border-input bg-transparent text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive",
+  "flex w-full border border-input bg-transparent text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-destructive aria-[invalid=true]:focus-visible:ring-destructive",
   {
     variants: {
       size: {

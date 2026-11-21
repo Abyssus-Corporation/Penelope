@@ -123,13 +123,17 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
-          aria-label={t.dashboard.nav.openWorkspaceMenu}
+          // Collapsed, only the "P" mark is visible, so name the button after the workspace.
+          aria-label={collapsed ? t.brand.name : undefined}
           className={cn(
             "flex w-full items-center rounded px-2 py-1.5 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             collapsed ? "justify-center gap-0" : "gap-2.5",
           )}
         >
-          <span className="flex size-6 shrink-0 select-none items-center justify-center rounded bg-foreground text-[11px] font-bold text-background">
+          <span
+            aria-hidden="true"
+            className="flex size-6 shrink-0 select-none items-center justify-center rounded bg-foreground text-[11px] font-bold text-background"
+          >
             P
           </span>
           {!collapsed && (
@@ -154,7 +158,7 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
           sideOffset={4}
           className="z-50 w-[200px] animate-fade-in rounded-md border border-border bg-card px-1 py-1 shadow-lg"
         >
-          <DropdownMenu.Label className="px-2.5 py-1 text-[11px] text-muted-foreground/60">
+          <DropdownMenu.Label className="px-2.5 py-1 text-[11px] text-muted-foreground">
             {t.dashboard.sidebar.workspace}
           </DropdownMenu.Label>
           <DropdownMenu.Item className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent">
@@ -197,13 +201,16 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
         <NavTooltip label={MOCK_USER.name} enabled={collapsed}>
           <DropdownMenu.Trigger asChild>
             <button
-              aria-label={nav.openUserMenu}
+              aria-label={collapsed ? MOCK_USER.name : undefined}
               className={cn(
                 "flex h-[34px] w-full items-center rounded transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 collapsed ? "justify-center px-0" : "gap-2.5 px-2.5",
               )}
             >
-              <span className="flex size-6 shrink-0 select-none items-center justify-center rounded-full bg-muted text-[11px] font-semibold uppercase text-foreground">
+              <span
+                aria-hidden="true"
+                className="flex size-6 shrink-0 select-none items-center justify-center rounded-full bg-muted text-[11px] font-semibold uppercase text-foreground"
+              >
                 {initials}
               </span>
               {!collapsed && (
@@ -214,7 +221,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
                   <ChevronsUpDown
                     size={12}
                     aria-hidden="true"
-                    className="shrink-0 text-muted-foreground/50"
+                    className="shrink-0 text-muted-foreground"
                   />
                 </>
               )}
@@ -233,14 +240,14 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
             <div className="flex items-center justify-between gap-2 px-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-medium text-foreground">{MOCK_USER.name}</p>
-                <p className="truncate text-[11px] text-muted-foreground/70">{MOCK_USER.email}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{MOCK_USER.email}</p>
               </div>
               <Tooltip.Root delayDuration={300}>
                 <Tooltip.Trigger asChild>
                   <Link
                     to="/settings"
                     aria-label={nav.account}
-                    className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <Settings size={13} aria-hidden="true" />
                   </Link>
@@ -260,7 +267,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
 
             {/* Theme */}
             <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-[12px] text-muted-foreground/70">{nav.theme}</span>
+              <span className="text-[12px] text-muted-foreground">{nav.theme}</span>
               <ToggleGroup.Root
                 type="single"
                 value={theme}
@@ -277,7 +284,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
                           "flex size-6 items-center justify-center rounded transition-colors",
                           theme === value
                             ? "bg-foreground text-background"
-                            : "text-muted-foreground/50 hover:text-muted-foreground",
+                            : "text-muted-foreground hover:text-foreground",
                         )}
                       >
                         <Icon size={12} aria-hidden="true" />
@@ -343,13 +350,13 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
                 size={12}
                 strokeWidth={1.5}
                 aria-hidden="true"
-                className="pointer-events-none absolute left-2.5 text-muted-foreground/40"
+                className="pointer-events-none absolute left-2.5 text-muted-foreground"
               />
               <input
                 type="search"
                 placeholder={t.dashboard.sidebar.searchPlaceholder}
                 aria-label={t.dashboard.sidebar.searchPlaceholder}
-                className="h-[28px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                className="h-[28px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               />
             </div>
           </div>
@@ -368,10 +375,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
               className={cn("flex flex-col gap-0.5", gi > 0 && "mt-5")}
             >
               {!collapsed && (
-                <span
-                  aria-hidden="true"
-                  className="mb-1 px-2.5 text-[11px] text-muted-foreground/50"
-                >
+                <span aria-hidden="true" className="mb-1 px-2.5 text-[11px] text-muted-foreground">
                   {nav.groups[group.key]}
                 </span>
               )}

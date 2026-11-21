@@ -62,7 +62,7 @@ export function DashboardPage() {
             </button>
             <div className="flex items-baseline gap-2">
               <h1 className="text-[14px] font-semibold text-foreground">{d.projects.title}</h1>
-              <span className="text-[12px] tabular-nums text-muted-foreground/60">
+              <span className="text-[12px] tabular-nums text-muted-foreground">
                 {filtered.length}
               </span>
             </div>
@@ -75,7 +75,7 @@ export function DashboardPage() {
               <Search
                 size={13}
                 strokeWidth={1.5}
-                className="pointer-events-none absolute left-2.5 text-muted-foreground/50"
+                className="pointer-events-none absolute left-2.5 text-muted-foreground"
               />
               <input
                 type="search"
@@ -83,7 +83,7 @@ export function DashboardPage() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={d.projects.searchPlaceholder}
                 aria-label={d.projects.searchPlaceholder}
-                className="h-[30px] w-[280px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                className="h-[30px] w-[280px] rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               />
             </div>
 
@@ -108,7 +108,7 @@ export function DashboardPage() {
                   aria-label={label}
                   className={cn(
                     "flex size-6 items-center justify-center rounded transition-colors",
-                    "text-muted-foreground/50 hover:text-muted-foreground",
+                    "text-muted-foreground hover:text-foreground",
                     "data-[state=on]:bg-accent data-[state=on]:text-foreground",
                   )}
                 >

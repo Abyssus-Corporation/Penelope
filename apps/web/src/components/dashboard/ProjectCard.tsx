@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { Link } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { AlertCircle, CheckCircle2, CircleDashed, Clock } from "lucide-react";
@@ -36,14 +37,14 @@ export function StatusDot({ status }: { status: ServiceStatus }) {
 // ─── Project avatar ───────────────────────────────────────────────────────────
 
 const AVATAR_COLORS = [
-  "bg-blue-500/15 text-blue-400",
-  "bg-violet-500/15 text-violet-400",
-  "bg-emerald-500/15 text-emerald-400",
-  "bg-orange-500/15 text-orange-400",
-  "bg-rose-500/15 text-rose-400",
-  "bg-cyan-500/15 text-cyan-400",
-  "bg-amber-500/15 text-amber-400",
-  "bg-pink-500/15 text-pink-400",
+  "bg-blue-500/15 text-blue-800 dark:text-blue-400",
+  "bg-violet-500/15 text-violet-800 dark:text-violet-400",
+  "bg-emerald-500/15 text-emerald-800 dark:text-emerald-400",
+  "bg-orange-500/15 text-orange-800 dark:text-orange-400",
+  "bg-rose-500/15 text-rose-800 dark:text-rose-400",
+  "bg-cyan-500/15 text-cyan-800 dark:text-cyan-400",
+  "bg-amber-500/15 text-amber-800 dark:text-amber-400",
+  "bg-pink-500/15 text-pink-800 dark:text-pink-400",
 ];
 
 function projectColor(name: string) {
@@ -114,7 +115,7 @@ function CardStatusBadge({ project }: { project: Project }) {
       );
     if (hasBuilding)
       return (
-        <span className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
+        <span className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-400">
           <CircleDashed size={11} strokeWidth={2} aria-hidden="true" className="animate-pulse" />
           {d.service.badge.building}
         </span>
@@ -137,9 +138,7 @@ function CardStatusBadge({ project }: { project: Project }) {
   return (
     <Tooltip.Root delayDuration={300}>
       <Tooltip.Trigger asChild>
-        <span aria-hidden="true" className="shrink-0">
-          {badge}
-        </span>
+        <span className="shrink-0">{badge}</span>
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Content
@@ -158,18 +157,25 @@ function CardStatusBadge({ project }: { project: Project }) {
 export function ProjectCard({ project }: { project: Project }) {
   const { dashboard: d } = useI18n();
   const hasFailure = project.services.some((s) => s.status === "failed");
+  const summaryId = useId();
 
   return (
     <Tooltip.Provider>
+      {/* The accessible name is the visible text (name, badge, count, time) so it matches
+          what sighted voice-control users see; the status details go in the description. */}
       <Link
         to={`/projects/${project.id}`}
-        aria-label={`${project.name} — ${statusSummary(project, d.service.summary)}`}
+        aria-describedby={summaryId}
         className={cn(
           "group flex flex-col rounded-md border bg-card transition-all duration-150",
           "hover:border-foreground/20 hover:shadow-sm",
           hasFailure ? "border-destructive/25 hover:border-destructive/40" : "border-border",
         )}
       >
+        <span id={summaryId} hidden>
+          {statusSummary(project, d.service.summary)}
+        </span>
+
         {/* Header */}
         <div className="flex items-center gap-3 p-4">
           <ProjectAvatar name={project.name} />
@@ -182,10 +188,10 @@ export function ProjectCard({ project }: { project: Project }) {
         {/* Footer */}
         <div className="mx-4 border-t border-border/60" />
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-[11px] text-muted-foreground/60">
+          <span className="text-[11px] text-muted-foreground">
             {project.services.length} {d.projects.services}
           </span>
-          <span className="text-[11px] tabular-nums text-muted-foreground/50">
+          <span className="text-[11px] tabular-nums text-muted-foreground">
             {project.deployedAt}
           </span>
         </div>

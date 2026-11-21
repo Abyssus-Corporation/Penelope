@@ -232,7 +232,11 @@ export function SignupPage() {
       </header>
 
       {/* Main — two-column grid matching Login */}
-      <main className="mx-auto grid w-full max-w-[1200px] flex-1 items-center gap-12 overflow-x-hidden px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto grid w-full max-w-[1200px] flex-1 items-center gap-12 overflow-x-hidden px-5 py-14 outline-none sm:px-8 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-14"
+      >
         {/* ── Left: multi-step form ── */}
         <div className="mx-auto w-full max-w-sm lg:mx-0">
           {/* ── Step 1 — account ── */}

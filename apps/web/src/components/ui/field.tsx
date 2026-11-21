@@ -31,7 +31,8 @@ export function Field({
   children,
 }: FieldProps) {
   const id = useId();
-  const descriptionId = description ? `${id}-description` : undefined;
+  // The description is hidden while an error shows, so only reference it when rendered.
+  const descriptionId = description && !error ? `${id}-description` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [descriptionId, errorId].filter(Boolean).join(" ") || undefined;
 
@@ -43,11 +44,11 @@ export function Field({
             {label}
           </label>
           {!required && optionalLabel && (
-            <span className="text-[11px] text-muted-foreground/70">{optionalLabel}</span>
+            <span className="text-[11px] text-muted-foreground">{optionalLabel}</span>
           )}
         </div>
         {children}
-        {description && !error && (
+        {descriptionId && (
           <p id={descriptionId} className="text-[12px] text-muted-foreground">
             {description}
           </p>
