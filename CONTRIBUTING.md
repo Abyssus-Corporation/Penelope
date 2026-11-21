@@ -31,19 +31,19 @@ All commits must follow the [Conventional Commits](https://www.conventionalcommi
 
 ### Types
 
-| Type       | When to use                                                             |
-| ---------- | ----------------------------------------------------------------------- |
-| `feat`     | A new feature                                                           |
-| `fix`      | A bug fix                                                               |
-| `docs`     | Documentation only                                                      |
-| `style`    | Formatting, whitespace — no logic change                                |
-| `refactor` | Code change that is neither a fix nor a feature                         |
-| `perf`     | Performance improvement                                                 |
-| `test`     | Adding or correcting tests                                              |
-| `build`    | Build system or dependency changes                                      |
-| `ci`       | CI configuration                                                        |
-| `chore`    | Everything else that doesn't touch `src` or `test`                      |
-| `revert`   | Reverts a previous commit                                               |
+| Type       | When to use                                        |
+| ---------- | -------------------------------------------------- |
+| `feat`     | A new feature                                      |
+| `fix`      | A bug fix                                          |
+| `docs`     | Documentation only                                 |
+| `style`    | Formatting, whitespace — no logic change           |
+| `refactor` | Code change that is neither a fix nor a feature    |
+| `perf`     | Performance improvement                            |
+| `test`     | Adding or correcting tests                         |
+| `build`    | Build system or dependency changes                 |
+| `ci`       | CI configuration                                   |
+| `chore`    | Everything else that doesn't touch `src` or `test` |
+| `revert`   | Reverts a previous commit                          |
 
 **Example:**
 
@@ -58,8 +58,8 @@ feat(dashboard): add project search filtering
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/viincnt/penelope.git
-cd penelope
+git clone https://github.com/Abyssus-Corporation/Penelope.git
+cd Penelope
 pnpm install
 ```
 

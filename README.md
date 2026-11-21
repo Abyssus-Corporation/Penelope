@@ -63,10 +63,10 @@ Cards are resizable across three density presets (compact, default, expanded). T
 
 A collapsible left-hand navigation with two groups:
 
-| Group   | Links                                                  |
-| ------- | ------------------------------------------------------ |
-| General | Projects, Deployments, Volumes, Templates              |
-| Admin   | Team, Usage, Settings                                  |
+| Group   | Links                                     |
+| ------- | ----------------------------------------- |
+| General | Projects, Deployments, Volumes, Templates |
+| Admin   | Team, Usage, Settings                     |
 
 When collapsed, full labels are replaced by icon-only entries with hover tooltips. The user menu at the bottom exposes a theme switcher (light / dark / system) and a sign-out action.
 
@@ -173,14 +173,14 @@ Penelope/
 
 ## 🧪 Development environment
 
-| Component  | Version          |
-| ---------- | ---------------- |
-| Node.js    | `≥ 20`           |
-| pnpm       | `≥ 9`            |
-| React      | `18.3`           |
-| TypeScript | `5.x`            |
-| Vite       | `6.x`            |
-| Tailwind   | `3.4`            |
+| Component  | Version |
+| ---------- | ------- |
+| Node.js    | `≥ 20`  |
+| pnpm       | `≥ 9`   |
+| React      | `18.3`  |
+| TypeScript | `5.x`   |
+| Vite       | `6.x`   |
+| Tailwind   | `3.4`   |
 
 ### Getting started
 
