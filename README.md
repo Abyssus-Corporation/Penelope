@@ -39,10 +39,14 @@ pnpm workspace
        │     ├── types/        Project / Service / GitProvider
        │     └── lib/          utils, mock-data
        │
-       └── packages/         (planned shared libs)
+       ├── apps/api          Axum + Tokio + sqlx (Postgres)
+       │
+       └── packages/
+             ├── api-types/  Generated OpenAPI TypeScript types
+             └── helene/     Isolated @helene/ui component library
 ```
 
-The web app is currently the only package. Shared backend clients, API types, and other utilities will live under `packages/` as the platform grows.
+The dashboard still runs against mock data. The API skeleton in `apps/api` exposes liveness and readiness probes and a deny-by-default auth layer; TypeScript types are generated from the OpenAPI document into `@penelope/api-types`. Helene (`@helene/ui`) is a standalone component library and must not depend on Penelope.
 
 ---
 
@@ -166,11 +170,18 @@ Penelope/
 │       ├── tailwind.config.ts
 │       └── vite.config.ts
 │
+│   └── api/                  Axum API
+│
 ├── deploy/
 │   └── Caddyfile             Reference TLS proxy, CSP, and cache headers
 │
-├── packages/                 (planned)
+├── packages/
+│   ├── api-types/            @penelope/api-types (generated OpenAPI types)
+│   └── helene/               @helene/ui (reusable components)
 │
+├── Cargo.toml                Rust workspace
+├── rust-toolchain.toml
+├── docker-compose.yml        Postgres 16 (development)
 ├── package.json
 ├── pnpm-workspace.yaml
 └── LICENSE
@@ -210,6 +221,25 @@ needs a looser policy. `pnpm preview` and the reference [`deploy/Caddyfile`](dep
 apply the same enforced CSP, Trusted Types in Report-Only, `nosniff`, `Referrer-Policy`,
 `frame-ancestors 'none'`, and cache rules (`no-store` for HTML, immutable long cache for hashed
 `/assets/` and `/fonts/`). The Caddyfile also sets HSTS and `upgrade-insecure-requests` for TLS.
+
+### API
+
+The API is a Rust workspace member (`cargo run -p api`). Copy `.env.example` to `.env` first (that file is gitignored).
+
+```bash
+cp .env.example .env             # required: compose reads POSTGRES_PASSWORD from .env
+docker compose up -d db          # Postgres 16, bound to 127.0.0.1
+cargo run -p api                 # listen on BIND_ADDRESS (default 127.0.0.1:3000)
+# GET /healthz  — liveness (no database)
+# GET /readyz   — readiness (checks Postgres)
+```
+
+Regenerate the OpenAPI document and the TypeScript types after changing API routes or schemas:
+
+```bash
+cargo run -p api --bin gen-openapi
+pnpm --filter @penelope/api-types generate
+```
 
 ---
 

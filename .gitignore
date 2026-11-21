@@ -36,6 +36,9 @@ pnpm-debug.log*
 # Turbo
 .turbo/
 
+# Rust
+target/
+
 # Test reports
 test-results/
 playwright-report/
