@@ -65,7 +65,7 @@ export function CreateProjectDialog({
 
     const project = createProject({
       name,
-      deployedAt: c.justCreated,
+      deployedAt: new Date().toISOString(),
       existingIds: existingProjects.map((p) => p.id),
     });
     onCreate(project);

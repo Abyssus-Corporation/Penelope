@@ -1,4 +1,6 @@
 export const en = {
+  /** BCP 47 tag used by Intl formatters for this message set. */
+  locale: "en",
   auth: {
     signup: {
       account: {
@@ -60,6 +62,8 @@ export const en = {
       themeLight: "Light",
       themeDark: "Dark",
       themeSystem: "System",
+      openNavigation: "Open navigation",
+      navigation: "Navigation",
       groups: {
         general: "General",
         admin: "Admin",
@@ -68,7 +72,7 @@ export const en = {
     projects: {
       title: "Projects",
       new: "New project",
-      services: "services",
+      services: { one: "{n} service", other: "{n} services" },
       empty: "No projects yet.",
       searchPlaceholder: "Search projects…",
       noResults: "No projects matching",
@@ -81,7 +85,6 @@ export const en = {
         cancel: "Cancel",
         submit: "Create project",
         close: "Close",
-        justCreated: "Just now",
         success: "Project {name} created",
         errors: {
           nameRequired: "Project name is required.",
@@ -91,14 +94,16 @@ export const en = {
         },
       },
     },
+    justNow: "just now",
     service: {
       running: "Running",
       building: "Building",
       failed: "Failed",
       sleeping: "Sleeping",
       summary: {
-        allRunning: "All {n} services running",
-        allSleeping: "All services sleeping",
+        allRunning: { one: "{n} service running", other: "All {n} services running" },
+        allSleeping: { one: "{n} service sleeping", other: "All {n} services sleeping" },
+        empty: "No services yet",
         failed: "{n} of {total} failed: {names}",
         building: "Building: {names}",
       },
@@ -107,6 +112,7 @@ export const en = {
         building: "Building",
         error: "Error",
         idle: "Idle",
+        empty: "Empty",
       },
     },
     sidebar: {
