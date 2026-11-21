@@ -32,7 +32,9 @@ describe("ProjectCard", () => {
     const deployedAt = new Date(Date.now() - 4 * 60_000).toISOString();
     renderCard({ id: "nw", name, services: [{ name: "web", status: "running" }], deployedAt });
 
-    expect(screen.getByText(name)).toHaveAttribute("title", name);
+    const visible = screen.getByText(name);
+    expect(visible.className).not.toMatch(/line-clamp|truncate/);
+    expect(screen.getByRole("link")).toHaveAccessibleName(expect.stringContaining(name));
     expect(screen.getByText("1 service")).toBeInTheDocument();
     const time = screen.getByText("4m ago");
     expect(time.tagName).toBe("TIME");

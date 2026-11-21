@@ -55,6 +55,8 @@ function MobileNav({
         <DialogOverlay />
         <DialogPrimitive.Content
           aria-describedby={undefined}
+          // Radix makes the page outside inert but doesn't set aria-modal itself.
+          aria-modal="true"
           onClick={(e) => (e.target as HTMLElement).closest("a") && setOpen(false)}
           className="fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-background shadow-xl focus:outline-none data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in"
         >

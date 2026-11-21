@@ -163,12 +163,9 @@ export function ProjectCard({ project }: { project: Project }) {
       {/* Header */}
       <div className="flex items-start gap-3 p-4">
         <ProjectAvatar name={project.name} />
-        {/* Wrap instead of truncating: lookalike names often differ only at the end. */}
+        {/* Never clipped: lookalike names often differ only at the end, and the API caps names at 48 characters. */}
         <span className="flex min-h-9 min-w-0 flex-1 items-center">
-          <span
-            title={project.name}
-            className="line-clamp-4 break-words text-[14px] font-semibold text-foreground"
-          >
+          <span className="break-words text-[14px] font-semibold text-foreground">
             {project.name}
           </span>
         </span>
