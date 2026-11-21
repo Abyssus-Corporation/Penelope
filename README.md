@@ -173,14 +173,14 @@ Penelope/
 
 ## 🧪 Development environment
 
-| Component  | Version |
-| ---------- | ------- |
-| Node.js    | `≥ 20`  |
-| pnpm       | `≥ 9`   |
-| React      | `18.3`  |
-| TypeScript | `5.x`   |
-| Vite       | `6.x`   |
-| Tailwind   | `3.4`   |
+| Component  | Version              |
+| ---------- | -------------------- |
+| Node.js    | `22.22.2+ or 24.15+` |
+| pnpm       | `≥ 10.34`            |
+| React      | `18.3`               |
+| TypeScript | `5.x`                |
+| Vite       | `6.x`                |
+| Tailwind   | `3.4`                |
 
 ### Getting started
 
