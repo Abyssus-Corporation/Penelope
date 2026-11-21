@@ -59,7 +59,12 @@ export function AppShell({ header, children }: { header: ReactNode; children: Re
       </div>
 
       <main id="main-content" tabIndex={-1} className="flex min-w-0 flex-1 flex-col outline-none">
-        <header className="sticky top-0 z-10 flex shrink-0 items-start gap-3 border-b border-border bg-background px-4">
+        {/*
+          The hairline is drawn inside the header box (like the sidebar's h-14 border-box
+          header), so a one-row header is exactly h-14 and both bottom borders share a pixel.
+          A real border-b would sit below the h-14 rows and make it 57px.
+        */}
+        <header className="sticky top-0 z-10 flex shrink-0 items-start gap-3 bg-background px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-border">
           {/* Pinned to the first row when the header content wraps onto a second one. */}
           <div className="flex h-14 shrink-0 items-center">
             <MobileNav />
