@@ -2,3 +2,7 @@ node_modules
 dist
 .turbo
 pnpm-lock.yaml
+
+# Generated OpenAPI artifacts
+packages/api-types/openapi.json
+packages/api-types/src/index.ts
