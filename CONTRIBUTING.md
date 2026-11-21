@@ -63,7 +63,7 @@ cd Penelope
 pnpm install
 ```
 
-> Requires **Node.js ≥ 20** and **pnpm ≥ 9**.
+> Requires **Node.js 22.22.2+ or 24.15+** and **pnpm ≥ 10.34** (pinned via `packageManager`).
 
 ---
 
