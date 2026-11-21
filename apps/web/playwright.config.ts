@@ -6,11 +6,15 @@ const previewPort = Number(process.env.PREVIEW_PORT || 4173);
 const previewOrigin = `http://127.0.0.1:${previewPort}`;
 // Only reuse a running preview when the operator asks for it.
 const reuseExistingServer = process.env.PW_REUSE_SERVER === "1";
-const systemChrome = existsSync("/usr/bin/google-chrome")
-  ? "/usr/bin/google-chrome"
-  : existsSync("/usr/bin/google-chrome-stable")
-    ? "/usr/bin/google-chrome-stable"
-    : undefined;
+// Locally, reuse an installed Chrome if there is one. CI always uses Playwright's
+// bundled Chromium (installed by the workflow), so runs are reproducible.
+const systemChrome = isCI
+  ? undefined
+  : existsSync("/usr/bin/google-chrome")
+    ? "/usr/bin/google-chrome"
+    : existsSync("/usr/bin/google-chrome-stable")
+      ? "/usr/bin/google-chrome-stable"
+      : undefined;
 
 export default defineConfig({
   testDir: "./e2e",

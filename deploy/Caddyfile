@@ -26,6 +26,11 @@
 		file_server
 	}
 
+	# Font license texts (OFL): same rule, a missing file is a 404.
+	handle /fonts/* {
+		file_server
+	}
+
 	handle {
 		try_files {path} /index.html
 		file_server

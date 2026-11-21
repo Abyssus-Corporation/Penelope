@@ -1,9 +1,35 @@
 /// <reference types="vitest/config" />
-import { defineConfig, type PreviewServer } from "vite";
+import { defineConfig, type Plugin, type PreviewServer } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { cacheControlForPath, PREVIEW_SECURITY_HEADERS } from "./security-headers";
+
+const require = createRequire(import.meta.url);
+
+// The OFL requires its text to travel with redistributed fonts, so each license
+// ships in dist/fonts next to the build. See src/fonts/FONT-LICENSES.md.
+const FONT_LICENSES = {
+  "fonts/Inter-OFL.txt": require.resolve("@fontsource-variable/inter/LICENSE"),
+  "fonts/Newsreader-OFL.txt": require.resolve("@fontsource-variable/newsreader/LICENSE"),
+  "fonts/ObelMono-OFL.txt": path.resolve(__dirname, "src/fonts/OFL.txt"),
+};
+
+function fontLicensesPlugin(): Plugin {
+  return {
+    name: "penelope-font-licenses",
+    apply: "build",
+    generateBundle() {
+      for (const [fileName, file] of Object.entries(FONT_LICENSES)) {
+        this.emitFile({ type: "asset", fileName, source: readFileSync(file, "utf8") });
+      }
+    },
+  };
+}
+
+// Static file trees that must 404 when a file is missing, never fall back to index.html.
+const NO_FALLBACK_DIRS = ["assets", "fonts"];
 
 function previewSecurityPlugin() {
   return {
@@ -11,18 +37,19 @@ function previewSecurityPlugin() {
     configurePreviewServer(server: PreviewServer) {
       // Run before Vite's preview middleware. Cache-Control is applied at
       // writeHead so a missing /assets/* file gets no-store (not immutable).
-      // Hashed assets must 404 when missing; Vite's SPA fallback would
-      // otherwise serve index.html as 200.
+      // Hashed assets and font licenses must 404 when missing; Vite's SPA
+      // fallback would otherwise serve index.html as 200.
       const dist = path.resolve(server.config.root, server.config.build.outDir);
       server.middlewares.use((req, res, next) => {
         const pathname = (req.url ?? "/").split("?")[0] ?? "/";
         for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
           res.setHeader(name, value);
         }
-        if (pathname.startsWith("/assets/")) {
-          const assetsDir = path.join(dist, "assets");
-          const file = path.resolve(assetsDir, path.relative("/assets", pathname));
-          if (!file.startsWith(assetsDir + path.sep) || !existsSync(file)) {
+        const dir = NO_FALLBACK_DIRS.find((name) => pathname.startsWith(`/${name}/`));
+        if (dir) {
+          const dirPath = path.join(dist, dir);
+          const file = path.resolve(dirPath, path.relative(`/${dir}`, pathname));
+          if (!file.startsWith(dirPath + path.sep) || !existsSync(file)) {
             res.statusCode = 404;
             res.setHeader("Cache-Control", cacheControlForPath(pathname, 404));
             res.end("Not found");
@@ -52,7 +79,7 @@ function previewSecurityPlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), previewSecurityPlugin()],
+  plugins: [react(), fontLicensesPlugin(), previewSecurityPlugin()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
