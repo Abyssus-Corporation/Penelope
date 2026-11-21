@@ -317,82 +317,75 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
-export function Sidebar({ collapsed }: { collapsed: boolean }) {
+export function Sidebar({ collapsed, className }: { collapsed: boolean; className?: string }) {
   const t = useI18n();
   const { pathname } = useLocation();
   const nav = t.dashboard.nav;
 
   return (
-    <Tooltip.Provider>
-      <aside
-        className={cn(
-          "flex h-full shrink-0 flex-col border-r border-border transition-all duration-200",
-          collapsed ? "w-[60px]" : "w-[256px]",
-        )}
-      >
-        {/* Workspace */}
-        <div className="flex h-14 shrink-0 items-center border-b border-border px-3">
-          <WorkspaceSwitcher collapsed={collapsed} />
-        </div>
+    <aside
+      className={cn(
+        "flex h-full shrink-0 flex-col border-r border-border transition-all duration-200",
+        collapsed ? "w-[60px]" : "w-[256px]",
+        className,
+      )}
+    >
+      {/* Workspace */}
+      <div className="flex h-14 shrink-0 items-center border-b border-border px-3">
+        <WorkspaceSwitcher collapsed={collapsed} />
+      </div>
 
-        {/* Search */}
-        {!collapsed && (
-          <div className="border-b border-border px-3 py-2">
-            <div className="relative flex items-center">
-              <Search
-                size={12}
-                strokeWidth={1.5}
-                aria-hidden="true"
-                className="pointer-events-none absolute left-2.5 text-muted-foreground/40"
-              />
-              <input
-                type="search"
-                placeholder={t.dashboard.sidebar.searchPlaceholder}
-                aria-label={t.dashboard.sidebar.searchPlaceholder}
-                className="h-[28px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-              />
-            </div>
+      {/* Search */}
+      {!collapsed && (
+        <div className="border-b border-border px-3 py-2">
+          <div className="relative flex items-center">
+            <Search
+              size={12}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-2.5 text-muted-foreground/40"
+            />
+            <input
+              type="search"
+              placeholder={t.dashboard.sidebar.searchPlaceholder}
+              aria-label={t.dashboard.sidebar.searchPlaceholder}
+              className="h-[28px] w-full rounded border border-border bg-transparent pl-7 pr-3 text-[12px] text-foreground transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 coarse:text-base"
+            />
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Nav */}
-        <nav
-          aria-label="Main navigation"
-          className="flex flex-1 flex-col overflow-y-auto px-2 py-3"
-        >
-          {NAV_GROUPS.map((group, gi) => (
-            <div
-              key={group.key}
-              role="group"
-              aria-label={nav.groups[group.key]}
-              className={cn("flex flex-col gap-0.5", gi > 0 && "mt-5")}
-            >
-              {!collapsed && (
-                <span
-                  aria-hidden="true"
-                  className="mb-1 px-2.5 text-[11px] text-muted-foreground/50"
-                >
-                  {nav.groups[group.key]}
-                </span>
-              )}
-              {group.items.map(({ key, href, Icon }) => (
-                <NavItem
-                  key={key}
-                  navKey={key}
-                  href={href}
-                  Icon={Icon}
-                  collapsed={collapsed}
-                  label={nav[key]}
-                  pathname={pathname}
-                />
-              ))}
-            </div>
-          ))}
-        </nav>
+      {/* Nav */}
+      <nav aria-label="Main navigation" className="flex flex-1 flex-col overflow-y-auto px-2 py-3">
+        {NAV_GROUPS.map((group, gi) => (
+          <div
+            key={group.key}
+            role="group"
+            aria-label={nav.groups[group.key]}
+            className={cn("flex flex-col gap-0.5", gi > 0 && "mt-5")}
+          >
+            {!collapsed && (
+              <span aria-hidden="true" className="mb-1 px-2.5 text-[11px] text-muted-foreground/50">
+                {nav.groups[group.key]}
+              </span>
+            )}
+            {group.items.map(({ key, href, Icon }) => (
+              <NavItem
+                key={key}
+                navKey={key}
+                href={href}
+                Icon={Icon}
+                collapsed={collapsed}
+                label={nav[key]}
+                pathname={pathname}
+              />
+            ))}
+          </div>
+        ))}
+      </nav>
 
-        {/* User */}
-        <UserMenu collapsed={collapsed} />
-      </aside>
-    </Tooltip.Provider>
+      {/* User */}
+      <UserMenu collapsed={collapsed} />
+    </aside>
   );
 }

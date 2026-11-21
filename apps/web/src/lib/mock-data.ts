@@ -1,5 +1,7 @@
 import type { Project } from "@/types/project";
 
+const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+
 export const PROJECTS: Project[] = [
   {
     id: "acme-production",
@@ -10,7 +12,7 @@ export const PROJECTS: Project[] = [
       { name: "postgres", status: "running" },
       { name: "redis", status: "running" },
     ],
-    deployedAt: "4m ago",
+    deployedAt: minutesAgo(4),
   },
   {
     id: "staging",
@@ -20,7 +22,7 @@ export const PROJECTS: Project[] = [
       { name: "api", status: "building" },
       { name: "postgres", status: "running" },
     ],
-    deployedAt: "12m ago",
+    deployedAt: minutesAgo(12),
   },
   {
     id: "analytics",
@@ -30,13 +32,13 @@ export const PROJECTS: Project[] = [
       { name: "postgres", status: "running" },
       { name: "worker", status: "failed" },
     ],
-    deployedAt: "3h ago",
+    deployedAt: minutesAgo(180),
   },
   {
     id: "docs-site",
     name: "docs-site",
     services: [{ name: "web", status: "sleeping" }],
-    deployedAt: "2d ago",
+    deployedAt: minutesAgo(2880),
   },
   {
     id: "preview-pr-42",
@@ -45,7 +47,7 @@ export const PROJECTS: Project[] = [
       { name: "web", status: "running" },
       { name: "api", status: "running" },
     ],
-    deployedAt: "28m ago",
+    deployedAt: minutesAgo(28),
   },
   {
     id: "monitoring",
@@ -58,6 +60,6 @@ export const PROJECTS: Project[] = [
       { name: "loki", status: "running" },
       { name: "tempo", status: "sleeping" },
     ],
-    deployedAt: "6h ago",
+    deployedAt: minutesAgo(360),
   },
 ];
