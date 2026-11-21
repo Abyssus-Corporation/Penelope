@@ -25,6 +25,8 @@ function applyTheme() {
  * Applies the saved theme before the first render and follows OS changes while
  * the theme is "system". Called once from main.tsx: it runs for every route,
  * including the router's errorElement, which replaces the root layout.
+ * public/theme-init.js applies the same rules earlier, before first paint;
+ * theme-init.test.ts keeps the two in step.
  */
 export function initTheme() {
   applyTheme();

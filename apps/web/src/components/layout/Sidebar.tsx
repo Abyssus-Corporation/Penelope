@@ -88,12 +88,14 @@ function NavItem({
   label: string;
   pathname: string;
 }) {
-  const active = pathname === href || (navKey === "projects" && pathname.startsWith("/projects"));
+  const active = pathname === href || (navKey === "projects" && pathname.startsWith("/projects/"));
 
   return (
     <NavTooltip label={label} enabled={collapsed}>
       <Link
         to={href}
+        // Same rule as the highlight, so assistive tech hears what sighted users see.
+        aria-current={active ? "page" : undefined}
         className={cn(
           "flex h-[34px] items-center rounded transition-colors",
           collapsed ? "justify-center px-0" : "gap-2.5 px-2.5",
