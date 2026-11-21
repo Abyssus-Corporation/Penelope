@@ -1,33 +1,38 @@
-import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+import { existsSync } from "node:fs";
 
 const isCI = Boolean(process.env.CI);
-const systemChrome = "/usr/bin/google-chrome";
-// Local fallback only: if Playwright's Chromium is not installed, use the
-// machine Chrome so `pnpm test:e2e` still runs.
-const useSystemChrome = !isCI && existsSync(systemChrome);
+const previewPort = Number(process.env.PREVIEW_PORT || 4173);
+const previewOrigin = `http://127.0.0.1:${previewPort}`;
+// Only reuse a running preview when the operator asks for it.
+const reuseExistingServer = process.env.PW_REUSE_SERVER === "1";
+const systemChrome = existsSync("/usr/bin/google-chrome")
+  ? "/usr/bin/google-chrome"
+  : existsSync("/usr/bin/google-chrome-stable")
+    ? "/usr/bin/google-chrome-stable"
+    : undefined;
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
-  reporter: "list",
+  workers: 1,
+  reporter: isCI ? "github" : "list",
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: previewOrigin,
     trace: "on-first-retry",
-    ...(useSystemChrome ? { channel: "chrome" as const } : {}),
+    ...(systemChrome ? { launchOptions: { executablePath: systemChrome } } : {}),
   },
-  projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
-  ],
+  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "pnpm build && pnpm preview --host 127.0.0.1 --port 4173 --strictPort",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: !isCI,
+    // In CI the web job already built `dist`. Locally, build first unless a
+    // preview is reused via PW_REUSE_SERVER=1.
+    command: isCI
+      ? `pnpm preview --host 127.0.0.1 --port ${previewPort} --strictPort`
+      : `pnpm build && pnpm preview --host 127.0.0.1 --port ${previewPort} --strictPort`,
+    url: previewOrigin,
+    reuseExistingServer,
     timeout: 120_000,
   },
 });

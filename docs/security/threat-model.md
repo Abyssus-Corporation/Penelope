@@ -31,9 +31,10 @@ See [`SECURITY.md`](../../SECURITY.md) for the public statement of the trust mod
     scripts are limited by the `allowBuilds` allowlist in `pnpm-workspace.yaml` (only `esbuild`).
   - `pnpm typecheck` runs `tsc --noEmit` against a solution-style `tsconfig.json` (`"files": []`), so
     it checks nothing.
-  - Dashboard fonts (Inter Variable, Sentient, Obel Mono) are self-hosted. A strict CSP is applied
-    by `vite preview` and the reference `deploy/Caddyfile` (`font-src 'self'`, Trusted Types in
-    Report-Only). The Vite dev server does not set a CSP, so HMR keeps working.
+  - Dashboard fonts (Inter Variable, Newsreader Variable, Obel Mono) are self-hosted. A strict CSP
+    is applied by `vite preview` and the reference `deploy/Caddyfile` (`font-src 'self'`, Trusted
+    Types enforced with `require-trusted-types-for 'script'` and `trusted-types 'none'`). The Vite
+    dev server does not set a CSP, so HMR keeps working.
   - `/dashboard` has no route guard. That is UX only; real authorization must live in the API.
   - Project names are validated only on the client. Once a name becomes a container, network or DNS
     label, the API must validate it again (RFC 1123: `[a-z0-9-]`, max 63, unique in the database).
@@ -84,7 +85,7 @@ Internet ──► Caddy ──► Dashboard / API (Rust) ──► Postgres
 | T2  | Internet → API   | Session theft, CSRF                                                                  | Session cookie `HttpOnly`, `Secure`, `SameSite=Lax` or stricter, `__Host-` prefix, CSRF token on state changes, strict CORS (no wildcard with credentials)         | 1     |
 | T3  | Operator → API   | Missing authorization on an endpoint (BOLA/IDOR)                                     | Deny-by-default Axum middleware, ownership check per resource, negative authorization test for every route                                                         | 0–1   |
 | T4  | Operator → API   | Injection, mass assignment                                                           | sqlx with bound parameters only (no string-built SQL), typed request structs with `deny_unknown_fields`, server-side validation                                    | 1     |
-| T5  | Dashboard        | XSS, clickjacking                                                                    | React escaping, no `dangerouslySetInnerHTML`, strict CSP, `frame-ancestors 'none'`, HSTS, `nosniff`, `Referrer-Policy`, set in Caddy                               | 0     |
+| T5  | Dashboard        | XSS, clickjacking                                                                    | React escaping, no `dangerouslySetInnerHTML`, strict CSP with enforced Trusted Types (`require-trusted-types-for 'script'`; `trusted-types 'none'`), `frame-ancestors 'none'`, HSTS, `nosniff`, `Referrer-Policy`, set in Caddy. `style-src 'unsafe-inline'`: see [Other accepted risks](#other-accepted-risks). | 0     |
 | T6  | Dashboard        | Untrusted build or app logs rendered in the UI (HTML or ANSI injection)              | Render logs as text, strip or safely convert ANSI, cap log size, authenticate SSE streams                                                                          | 3     |
 | T7  | Caddy → apps     | User apps read dashboard cookies or share its origin                                 | Dashboard on its own domain, separate from app domains (or a public-suffix domain for apps); cookies never scoped to the shared parent domain                      | 2     |
 | T8  | Caddy            | Custom domain takeover, Host header abuse, ACME abuse                                | Prove domain ownership (TXT record) before routing, explicit host matchers only, no catch-all to the dashboard, on-demand TLS gated by an `ask` endpoint           | 2     |
@@ -119,6 +120,16 @@ These are accepted while Penelope is single-tenant and documented in `SECURITY.m
 What is **not** accepted, even in single-tenant mode: access to the control plane from the internet
 without auth (T1–T5), the Docker API exposed to builds or apps (T9–T10), secrets in logs or image
 layers (T13), and SSRF from Penelope's own outbound requests (T14).
+
+### Other accepted risks
+
+- **style-src `'unsafe-inline'`.** Radix (`react-remove-scroll-bar`) and Sonner inject `<style>`
+  elements at runtime (`style-src-elem`). Hashes of the scrollbar-gap rules are not practical to
+  maintain. The dashboard does not use `dangerouslySetInnerHTML`. Revisit when nonces, constructable
+  stylesheets, or SSR make a tighter `style-src` viable. Owner: Kai. Review by 2027-05-21.
+
+Any `trustedTypes.createPolicy` requires a named policy explicitly listed in `trusted-types` and
+AppSec (Kai) review; the default stays `'none'`.
 
 ## Items that reopen if Penelope goes multi-tenant
 

@@ -154,7 +154,8 @@ Penelope/
 ├── apps/
 │   └── web/                  React SPA
 │       ├── e2e/              Playwright tests against vite preview
-│       ├── public/fonts/     Self-hosted Inter is bundled; Sentient and Obel Mono live here
+│       ├── public/           favicon.svg
+│       ├── src/fonts/        Obel Mono (OFL) plus license files; Inter and Newsreader come from fontsource
 │       ├── src/
 │       │   ├── components/   ui/ and dashboard/
 │       │   ├── hooks/        useTheme
@@ -173,7 +174,8 @@ Penelope/
 │   └── api/                  Axum API
 │
 ├── deploy/
-│   └── Caddyfile             Reference TLS proxy, CSP, and cache headers
+│   ├── Caddyfile             Reference TLS proxy, CSP, and cache headers
+│   └── security-headers.caddy  Generated from apps/web/security-headers.ts
 │
 ├── packages/
 │   ├── api-types/            @penelope/api-types (generated OpenAPI types)
@@ -212,15 +214,23 @@ pnpm lint             # ESLint across all packages
 pnpm format           # Prettier across apps/**
 pnpm test             # Vitest unit tests
 pnpm test:e2e         # Playwright against vite preview
+pnpm gen:caddy-headers  # regenerate deploy/security-headers.caddy
+pnpm smoke:headers    # compare preview and Caddy headers to security-headers.ts
 ```
 
-Dashboard typography is self-hosted (Inter Variable via fontsource, Sentient and Obel Mono in
-`apps/web/public/fonts`), so the production CSP can use `font-src 'self'` and the UI never calls
-Google Fonts or Fontshare. `pnpm dev` does not set a Content-Security-Policy, because Vite HMR
-needs a looser policy. `pnpm preview` and the reference [`deploy/Caddyfile`](deploy/Caddyfile)
-apply the same enforced CSP, Trusted Types in Report-Only, `nosniff`, `Referrer-Policy`,
-`frame-ancestors 'none'`, and cache rules (`no-store` for HTML, immutable long cache for hashed
-`/assets/` and `/fonts/`). The Caddyfile also sets HSTS and `upgrade-insecure-requests` for TLS.
+Dashboard typography is self-hosted (Inter Variable and Newsreader Variable via fontsource, Obel
+Mono in `apps/web/src/fonts` so Vite hashes the file into `/assets/`), so the production CSP can
+use `font-src 'self'` and the UI never calls Google Fonts or Fontshare. `pnpm dev` does not set a
+Content-Security-Policy, because Vite HMR needs a looser policy. `pnpm preview` and the reference
+[`deploy/Caddyfile`](deploy/Caddyfile) apply the same enforced CSP, including Trusted Types
+(`require-trusted-types-for 'script'` and `trusted-types 'none'`), `nosniff`, `Referrer-Policy`,
+`frame-ancestors 'none'`, and cache rules (`no-cache` for HTML, immutable long cache for hashed
+`/assets/*` on 200, `no-store` on errors). Header values live in
+[`apps/web/security-headers.ts`](apps/web/security-headers.ts); `pnpm gen:caddy-headers` writes
+[`deploy/security-headers.caddy`](deploy/security-headers.caddy) and CI fails if that file drifts.
+The Caddyfile also sets HSTS (`max-age=31536000`, no `includeSubDomains`) and
+`upgrade-insecure-requests` for TLS. Missing `/assets/*` files 404; they are never rewritten to
+`index.html`.
 
 ### API
 

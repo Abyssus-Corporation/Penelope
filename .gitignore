@@ -42,3 +42,6 @@ target/
 # Test reports
 test-results/
 playwright-report/
+
+# Local toolchain (e.g. pinned Caddy for smoke tests)
+.tools/

@@ -1,143 +1,185 @@
-import { expect, test, type Page, type Response } from "@playwright/test";
+import { expect, test, type Page, type Request } from "@playwright/test";
 import {
+  CACHE_CONTROL_ERROR,
   CACHE_CONTROL_HTML,
   CACHE_CONTROL_IMMUTABLE,
+  CONTENT_SECURITY_POLICY,
   PREVIEW_SECURITY_HEADERS,
 } from "../security-headers";
 
-interface CspViolation {
+const BASE = new URL(
+  process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${process.env.PREVIEW_PORT || 4173}`,
+);
+
+test.use({ storageState: { cookies: [], origins: [] } });
+
+const PUBLIC_PATHS = ["/login", "/signup"] as const;
+const AUTHED_PATH = "/dashboard";
+
+type CspViolation = {
   blockedURI: string;
-  disposition: SecurityPolicyViolationEvent["disposition"];
-  effectiveDirective: string;
   violatedDirective: string;
-}
+  effectiveDirective: string;
+  disposition: string;
+  originalPolicy: string;
+};
 
-declare global {
-  interface Window {
-    __cspViolations?: CspViolation[];
-  }
-}
-
-const BASE = new URL("http://127.0.0.1:4173");
-
-function collectPageSignals(page: Page) {
-  const foreignRequests: string[] = [];
+async function collectPageSignals(page: Page) {
+  const thirdParty: Request[] = [];
+  const violations: CspViolation[] = [];
 
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.origin !== BASE.origin) {
-      foreignRequests.push(request.url());
+      thirdParty.push(request);
     }
   });
 
+  await page.addInitScript(() => {
+    const bag = ((window as unknown as { __cspViolations?: CspViolation[] }).__cspViolations = []);
+    document.addEventListener("securitypolicyviolation", (event) => {
+      bag.push({
+        blockedURI: event.blockedURI,
+        violatedDirective: event.violatedDirective,
+        effectiveDirective: event.effectiveDirective,
+        disposition: event.disposition,
+        originalPolicy: event.originalPolicy,
+      });
+    });
+  });
+
   return {
-    foreignRequests,
-    async enforcedViolations() {
-      const violations = await page.evaluate(() => window.__cspViolations ?? []);
-      return violations.filter((violation) => violation.disposition === "enforce");
+    thirdParty,
+    async readViolations() {
+      violations.push(
+        ...((await page.evaluate(
+          () => (window as unknown as { __cspViolations?: CspViolation[] }).__cspViolations ?? [],
+        )) ?? []),
+      );
+      return violations;
     },
   };
 }
 
-function expectSecurityHeaders(response: Response | null) {
-  expect(response, "navigation should produce a response").not.toBeNull();
-  const headers = response!.headers();
-  for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
-    expect(headers[name.toLowerCase()], name).toBe(value);
-  }
-  expect(headers["strict-transport-security"]).toBeFalsy();
-  expect(headers["cache-control"]).toBe(CACHE_CONTROL_HTML);
+function assertNoSecurityViolations(violations: CspViolation[]) {
+  expect(
+    violations,
+    `securitypolicyviolation events: ${JSON.stringify(violations, null, 2)}`,
+  ).toEqual([]);
 }
 
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    window.__cspViolations = [];
-    document.addEventListener("securitypolicyviolation", (event) => {
-      window.__cspViolations = window.__cspViolations ?? [];
-      window.__cspViolations.push({
-        blockedURI: event.blockedURI,
-        disposition: event.disposition,
-        effectiveDirective: event.effectiveDirective,
-        violatedDirective: event.violatedDirective,
-      });
+async function expectSecurityHeaders(path: string) {
+  const response = await fetch(new URL(path, BASE));
+  expect(response.ok, `${path} should be 200`).toBe(true);
+  for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
+    expect(response.headers.get(name.toLowerCase()), `${path} ${name}`).toBe(value);
+  }
+  expect(response.headers.get("content-security-policy")).toBe(CONTENT_SECURITY_POLICY);
+  expect(response.headers.get("content-security-policy-report-only")).toBeNull();
+  expect(response.headers.get("strict-transport-security")).toBeNull();
+  expect(response.headers.get("cache-control")).toBe(CACHE_CONTROL_HTML);
+}
+
+test.describe("security headers on the preview server", () => {
+  test("login, signup, and dashboard HTML carry the production headers", async () => {
+    await expectSecurityHeaders("/login");
+    await expectSecurityHeaders("/signup");
+    await expectSecurityHeaders("/dashboard");
+  });
+
+  test("hashed assets are immutable; a missing asset is 404 with no-store", async () => {
+    const index = await fetch(new URL("/", BASE));
+    const html = await index.text();
+    const asset = html.match(/\/assets\/[^"' ]+\.js/);
+    expect(asset, "built HTML should reference a hashed /assets/*.js file").not.toBeNull();
+    const assetResponse = await fetch(new URL(asset![0], BASE));
+    expect(assetResponse.ok).toBe(true);
+    expect(assetResponse.headers.get("cache-control")).toBe(CACHE_CONTROL_IMMUTABLE);
+    for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
+      expect(assetResponse.headers.get(name.toLowerCase()), `asset ${name}`).toBe(value);
+    }
+
+    const missing = await fetch(new URL("/assets/missing-asset-does-not-exist.js", BASE));
+    expect(missing.status).toBe(404);
+    const body = await missing.text();
+    expect(body).not.toMatch(/<!doctype html>/i);
+    expect(missing.headers.get("cache-control")).toBe(CACHE_CONTROL_ERROR);
+    for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
+      expect(missing.headers.get(name.toLowerCase()), `404 asset ${name}`).toBe(value);
+    }
+  });
+});
+
+test.describe("pages under the production CSP", () => {
+  for (const path of PUBLIC_PATHS) {
+    test(`${path} has no CSP violations and no third-party requests`, async ({ page }) => {
+      const signals = await collectPageSignals(page);
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await page.waitForTimeout(250);
+      assertNoSecurityViolations(await signals.readViolations());
+      expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
     });
-  });
-});
-
-test("login, signup, and dashboard stay first-party under the preview CSP", async ({ page }) => {
-  const signals = collectPageSignals(page);
-
-  const login = await page.goto("/login");
-  expectSecurityHeaders(login);
-  await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible();
-
-  const signup = await page.goto("/signup");
-  expectSecurityHeaders(signup);
-  await expect(page.getByRole("heading", { name: /create your account/i })).toBeVisible();
-
-  const dashboard = await page.goto("/dashboard");
-  expectSecurityHeaders(dashboard);
-  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-
-  expect(signals.foreignRequests, "no requests should leave the preview origin").toEqual([]);
-  expect(await signals.enforcedViolations(), "no enforced CSP violations").toEqual([]);
-});
-
-test("creating a project opens the dialog and shows a toast without CSP violations", async ({
-  page,
-}) => {
-  const signals = collectPageSignals(page);
-
-  await page.goto("/dashboard");
-  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-
-  const newProject = page.getByRole("button", { name: "New project" });
-  await newProject.click();
-
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Create a new project" })).toBeVisible();
-  await expect(dialog.getByLabel("Project name")).toBeFocused();
-
-  await dialog.getByLabel("Project name").fill("csp-demo");
-  await dialog.getByRole("button", { name: "Create project" }).click();
-
-  await expect(dialog).toBeHidden();
-  await expect(page.getByText("Project csp-demo created")).toBeVisible();
-
-  expect(signals.foreignRequests, "no requests should leave the preview origin").toEqual([]);
-  expect(await signals.enforcedViolations(), "no enforced CSP violations").toEqual([]);
-});
-
-test("hashed assets and self-hosted fonts are cached immutably", async ({ page, request }) => {
-  const response = await page.goto("/dashboard");
-  expectSecurityHeaders(response);
-
-  const assetPaths = await page.evaluate(() => {
-    const urls = [
-      ...[...document.querySelectorAll("script[src]")].map((el) => (el as HTMLScriptElement).src),
-      ...[...document.querySelectorAll("link[rel=stylesheet]")].map(
-        (el) => (el as HTMLLinkElement).href,
-      ),
-    ];
-    return urls
-      .map((url) => new URL(url).pathname)
-      .filter((pathname) => pathname.startsWith("/assets/"));
-  });
-  expect(assetPaths.length, "the document should reference hashed /assets/ files").toBeGreaterThan(
-    0,
-  );
-
-  for (const pathname of assetPaths) {
-    const asset = await request.get(pathname);
-    expect(asset.ok(), pathname).toBeTruthy();
-    expect(asset.headers()["cache-control"], pathname).toBe(CACHE_CONTROL_IMMUTABLE);
-    expect(asset.headers()["content-security-policy"], pathname).toBe(
-      PREVIEW_SECURITY_HEADERS["Content-Security-Policy"],
-    );
   }
 
-  const font = await request.get("/fonts/ObelMono-VF.woff2");
-  expect(font.ok()).toBeTruthy();
-  expect(font.headers()["cache-control"]).toBe(CACHE_CONTROL_IMMUTABLE);
+  test("login can be filled without CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page);
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("audit@example.com");
+    await page.getByLabel("Password").fill("a-sufficiently-long-passphrase");
+    await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
+  test("dashboard dialog and dynamic toast have no CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page);
+    await page.goto(AUTHED_PATH);
+    await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+
+    await page.getByRole("button", { name: "New project" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "Create a new project" })).toBeVisible();
+    await expect(dialog.getByLabel("Project name")).toBeFocused();
+    await dialog.getByLabel("Project name").fill("csp-demo");
+    await dialog.getByRole("button", { name: "Create project" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByText("Project csp-demo created")).toBeVisible();
+
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
+  test("assigning innerHTML throws under Trusted Types (test-only, not in the app)", async ({
+    page,
+  }) => {
+    const signals = await collectPageSignals(page);
+    await page.goto("/login");
+    const result = await page.evaluate(() => {
+      const el = document.createElement("div");
+      try {
+        el.innerHTML = "<b>x</b>";
+        return { threw: false, name: "", message: "" };
+      } catch (error) {
+        const err = error as Error;
+        return { threw: true, name: err.name, message: err.message };
+      }
+    });
+    expect(result.threw).toBe(true);
+    expect(result.name).toBe("TypeError");
+    // The assignment itself is reported as a Trusted Types violation; that is
+    // the point of the test. Nothing else on the page should violate.
+    const violations = await signals.readViolations();
+    expect(violations.length).toBeGreaterThanOrEqual(1);
+    expect(
+      violations.every(
+        (violation) =>
+          violation.effectiveDirective === "require-trusted-types-for" ||
+          violation.violatedDirective === "require-trusted-types-for" ||
+          violation.effectiveDirective === "trusted-types" ||
+          violation.violatedDirective === "trusted-types",
+      ),
+    ).toBe(true);
+  });
 });
