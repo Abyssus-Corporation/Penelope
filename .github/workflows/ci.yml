@@ -1,8 +1,8 @@
 name: CI
 
 on:
+  # Every PR, whatever its base, so stacked PRs get CI too.
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 
