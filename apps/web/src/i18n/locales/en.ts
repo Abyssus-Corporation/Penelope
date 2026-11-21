@@ -170,8 +170,7 @@ export const en = {
     neverDeployed: "Never deployed",
     providers: { github: "GitHub", gitlab: "GitLab", bitbucket: "Bitbucket" },
     notFoundTitle: "Project not found",
-    notFound:
-      "There's no project with the ID {id}. It may have been deleted, or the link is wrong.",
+    notFound: "This project doesn't exist. It may have been deleted, or the link is wrong.",
     errorTitle: "Couldn't load this project",
     error: "Check your connection and try again.",
     retry: "Try again",

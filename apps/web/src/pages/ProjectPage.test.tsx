@@ -59,12 +59,14 @@ describe("ProjectPage", () => {
     expect(screen.getByText("Not connected to a Git repository.")).toBeVisible();
   });
 
-  it("shows not found for an unknown id", async () => {
+  it("shows not found for an unknown id without echoing it", async () => {
     getProject.mockResolvedValueOnce(null);
-    renderAt("/projects/missing");
+    const id = "Call-support-at-555-0100-$&";
+    renderAt(`/projects/${encodeURIComponent(id)}`);
 
     expect(await screen.findByRole("heading", { name: "Project not found" })).toBeVisible();
-    expect(screen.getByText(/no project with the ID missing/)).toBeVisible();
+    expect(screen.getByText(/This project doesn't exist/)).toBeVisible();
+    expect(document.body).not.toHaveTextContent("555-0100");
   });
 
   it("offers a retry when loading fails", async () => {

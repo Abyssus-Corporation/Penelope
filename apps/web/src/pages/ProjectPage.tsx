@@ -115,9 +115,8 @@ export function ProjectPage() {
         {state.status === "not-found" && (
           <div className="max-w-md">
             <h1 className={H1}>{p.notFoundTitle}</h1>
-            <p className="mt-3 break-words text-[15px] text-muted-foreground">
-              {p.notFound.replace("{id}", id)}
-            </p>
+            {/* Never echo the URL id: it is attacker-controlled text (content spoofing). */}
+            <p className="mt-3 text-[15px] text-muted-foreground">{p.notFound}</p>
           </div>
         )}
 
