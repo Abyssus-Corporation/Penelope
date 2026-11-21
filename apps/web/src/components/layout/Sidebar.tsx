@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import {
   FolderGit2,
   Rocket,
@@ -120,7 +119,7 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
   const t = useI18n();
 
   return (
-    <DropdownMenu.Root>
+    <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
         <button
           // Collapsed, only the "P" mark is visible, so name the button after the workspace.
@@ -151,24 +150,23 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
         </button>
       </DropdownMenu.Trigger>
 
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="bottom"
-          align="start"
-          sideOffset={4}
-          className="z-50 w-[200px] animate-fade-in rounded-md border border-border bg-card px-1 py-1 shadow-lg"
-        >
-          <DropdownMenu.Label className="px-2.5 py-1 text-[11px] text-muted-foreground">
-            {t.dashboard.sidebar.workspace}
-          </DropdownMenu.Label>
-          <DropdownMenu.Item className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded bg-foreground text-[10px] font-bold text-background">
-              P
-            </span>
-            {t.brand.name}
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
+      {/* Not portalled, so the open menu stays inside the sidebar landmark. */}
+      <DropdownMenu.Content
+        side="bottom"
+        align="start"
+        sideOffset={4}
+        className="z-50 w-[200px] animate-fade-in rounded-md border border-border bg-card px-1 py-1 shadow-lg"
+      >
+        <DropdownMenu.Label className="px-2.5 py-1 text-[11px] text-muted-foreground">
+          {t.dashboard.sidebar.workspace}
+        </DropdownMenu.Label>
+        <DropdownMenu.Item className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent">
+          <span className="flex size-5 shrink-0 items-center justify-center rounded bg-foreground text-[10px] font-bold text-background">
+            P
+          </span>
+          {t.brand.name}
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
 }
@@ -176,6 +174,9 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
 // ─── User menu ────────────────────────────────────────────────────────────────
 
 const MOCK_USER = { name: "Ada Lovelace", email: "ada@acme.com" };
+
+const MENU_ITEM =
+  "flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none transition-colors data-[highlighted]:bg-accent";
 
 const THEME_OPTIONS = [
   { value: "light" as Theme, Icon: Sun, labelKey: "themeLight" as const },
@@ -197,7 +198,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div className="border-t border-border px-2 py-2">
-      <DropdownMenu.Root>
+      <DropdownMenu.Root modal={false}>
         <NavTooltip label={MOCK_USER.name} enabled={collapsed}>
           <DropdownMenu.Trigger asChild>
             <button
@@ -229,94 +230,86 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
           </DropdownMenu.Trigger>
         </NavTooltip>
 
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content
-            side="top"
-            align="start"
-            sideOffset={6}
-            className="z-50 w-[220px] animate-fade-in rounded-md border border-border bg-card shadow-lg"
-          >
-            {/* User info */}
-            <div className="flex items-center justify-between gap-2 px-3 py-2.5">
-              <div className="min-w-0">
-                <p className="truncate text-[13px] font-medium text-foreground">{MOCK_USER.name}</p>
-                <p className="truncate text-[11px] text-muted-foreground">{MOCK_USER.email}</p>
-              </div>
-              <Tooltip.Root delayDuration={300}>
-                <Tooltip.Trigger asChild>
-                  <Link
-                    to="/settings"
-                    aria-label={nav.account}
-                    className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    <Settings size={13} aria-hidden="true" />
-                  </Link>
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    sideOffset={6}
-                    className="z-[60] animate-fade-in rounded bg-foreground px-2 py-1 text-[11px] text-background shadow"
-                  >
-                    {nav.account}
-                  </Tooltip.Content>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </div>
+        {/* Not portalled, so the open menu stays inside the sidebar landmark. */}
+        <DropdownMenu.Content
+          side="top"
+          align="start"
+          sideOffset={6}
+          className="z-50 w-[220px] animate-fade-in rounded-md border border-border bg-card shadow-lg"
+        >
+          {/* User info: a label, not an item, so the menu only holds menu items */}
+          <DropdownMenu.Label className="min-w-0 px-3 py-2.5">
+            <p className="truncate text-[13px] font-medium text-foreground">{MOCK_USER.name}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{MOCK_USER.email}</p>
+          </DropdownMenu.Label>
 
-            <DropdownMenu.Separator className="my-1 h-px bg-border" />
+          <DropdownMenu.Separator className="my-1 h-px bg-border" />
 
-            {/* Theme */}
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-[12px] text-muted-foreground">{nav.theme}</span>
-              <ToggleGroup.Root
-                type="single"
-                value={theme}
-                onValueChange={(v) => v && setTheme(v as Theme)}
-                className="flex items-center rounded border border-border p-0.5"
-              >
-                {THEME_OPTIONS.map(({ value, Icon, labelKey }) => (
-                  <Tooltip.Root key={value} delayDuration={300}>
-                    <Tooltip.Trigger asChild>
-                      <ToggleGroup.Item
-                        value={value}
-                        aria-label={nav[labelKey]}
-                        className={cn(
-                          "flex size-6 items-center justify-center rounded transition-colors",
-                          theme === value
-                            ? "bg-foreground text-background"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <Icon size={12} aria-hidden="true" />
-                      </ToggleGroup.Item>
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Content
-                        sideOffset={6}
-                        className="z-[60] animate-fade-in rounded bg-foreground px-2 py-1 text-[11px] text-background shadow"
-                      >
-                        {nav[labelKey]}
-                      </Tooltip.Content>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                ))}
-              </ToggleGroup.Root>
-            </div>
+          <div className="px-1 py-1">
+            <DropdownMenu.Item asChild className={MENU_ITEM}>
+              <Link to="/settings">
+                <Settings size={13} aria-hidden="true" className="text-muted-foreground" />
+                {nav.account}
+              </Link>
+            </DropdownMenu.Item>
+          </div>
 
-            <DropdownMenu.Separator className="my-1 h-px bg-border" />
+          <DropdownMenu.Separator className="my-1 h-px bg-border" />
 
-            {/* Sign out */}
-            <div className="px-1 py-1">
-              <DropdownMenu.Item
-                className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-destructive outline-none transition-colors data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive"
-                onSelect={() => {}}
-              >
-                <LogOut size={13} aria-hidden="true" />
-                {nav.signOut}
-              </DropdownMenu.Item>
-            </div>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
+          {/* Theme: radio items, so arrow keys reach every option */}
+          <div className="flex items-center justify-between px-3 py-2">
+            <DropdownMenu.Label className="text-[12px] text-muted-foreground">
+              {nav.theme}
+            </DropdownMenu.Label>
+            <DropdownMenu.RadioGroup
+              value={theme}
+              onValueChange={(v) => setTheme(v as Theme)}
+              className="flex items-center rounded border border-border p-0.5"
+            >
+              {THEME_OPTIONS.map(({ value, Icon, labelKey }) => (
+                <Tooltip.Root key={value} delayDuration={300}>
+                  <Tooltip.Trigger asChild>
+                    <DropdownMenu.RadioItem
+                      value={value}
+                      aria-label={nav[labelKey]}
+                      // Keep the menu open so the new theme can be seen and changed again.
+                      onSelect={(e) => e.preventDefault()}
+                      className={cn(
+                        "flex size-6 cursor-pointer items-center justify-center rounded outline-none transition-colors data-[highlighted]:ring-1 data-[highlighted]:ring-ring",
+                        theme === value
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon size={12} aria-hidden="true" />
+                    </DropdownMenu.RadioItem>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      sideOffset={6}
+                      className="z-[60] animate-fade-in rounded bg-foreground px-2 py-1 text-[11px] text-background shadow"
+                    >
+                      {nav[labelKey]}
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              ))}
+            </DropdownMenu.RadioGroup>
+          </div>
+
+          <DropdownMenu.Separator className="my-1 h-px bg-border" />
+
+          {/* Sign out */}
+          <div className="px-1 py-1">
+            <DropdownMenu.Item
+              className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-destructive outline-none transition-colors data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive"
+              onSelect={() => {}}
+            >
+              <LogOut size={13} aria-hidden="true" />
+              {nav.signOut}
+            </DropdownMenu.Item>
+          </div>
+        </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>
   );
