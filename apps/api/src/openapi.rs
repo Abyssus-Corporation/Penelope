@@ -6,8 +6,8 @@ use utoipa::{
 use crate::{
     error::ErrorBody,
     routes::{
-        health::{HealthResponse, ReadyResponse},
         projects::{GitProvider, LastCommit, Project, ProjectRepo, Service, ServiceStatus},
+        public::{HealthResponse, ReadyResponse},
     },
 };
 
@@ -20,8 +20,8 @@ use crate::{
         description = "Self-hosted deployment platform API"
     ),
     paths(
-        crate::routes::health::healthz,
-        crate::routes::health::readyz,
+        crate::routes::public::healthz,
+        crate::routes::public::readyz,
         crate::routes::projects::list_projects,
     ),
     components(schemas(

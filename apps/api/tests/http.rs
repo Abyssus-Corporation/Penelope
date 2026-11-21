@@ -17,7 +17,7 @@ const PUBLIC_GET_PATHS: &[&str] = &["/healthz", "/readyz"];
 
 const SECURITY_CSP: &str = "default-src 'none'; frame-ancestors 'none'";
 
-fn test_app() -> axum::Router {
+fn test_app() -> api::App {
     let pool = db::lazy_pool("postgres://penelope:penelope@127.0.0.1:5432/penelope")
         .expect("test database URL should parse");
     api::app(AppState { pool })
@@ -196,5 +196,103 @@ async fn readyz_returns_unavailable_when_the_database_does_not_respond() {
     assert!(
         elapsed < Duration::from_secs(4),
         "readiness probe hung for {elapsed:?}"
+    );
+}
+
+#[tokio::test]
+async fn the_only_public_routes_are_healthz_and_readyz() {
+    let spec = openapi::spec();
+    let mut public = Vec::new();
+    for (path, item) in &spec.paths.paths {
+        for (method, operation) in [
+            (Method::GET, item.get.as_ref()),
+            (Method::PUT, item.put.as_ref()),
+            (Method::POST, item.post.as_ref()),
+            (Method::DELETE, item.delete.as_ref()),
+            (Method::OPTIONS, item.options.as_ref()),
+            (Method::HEAD, item.head.as_ref()),
+            (Method::PATCH, item.patch.as_ref()),
+            (Method::TRACE, item.trace.as_ref()),
+        ] {
+            let Some(operation) = operation else {
+                continue;
+            };
+            let requires_auth = operation
+                .security
+                .as_ref()
+                .is_some_and(|requirements| !requirements.is_empty());
+            let response = request(method.clone(), path).await;
+            if requires_auth {
+                assert_eq!(
+                    response.status(),
+                    StatusCode::UNAUTHORIZED,
+                    "expected 401 for {method} {path}"
+                );
+            } else {
+                assert_ne!(
+                    response.status(),
+                    StatusCode::UNAUTHORIZED,
+                    "{method} {path} is documented as public"
+                );
+                public.push(format!("{method} {path}"));
+            }
+        }
+    }
+    public.sort();
+    assert_eq!(
+        public,
+        ["GET /healthz", "GET /readyz"],
+        "new public routes must be reviewed before they are added to this list",
+    );
+}
+
+#[tokio::test]
+async fn authenticated_routes_are_not_stored_in_caches() {
+    let response = request(Method::GET, "/projects").await;
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        response
+            .headers()
+            .get(header::CACHE_CONTROL)
+            .map(|v| v.as_bytes()),
+        Some(&b"no-store"[..]),
+    );
+}
+
+#[tokio::test]
+async fn post_projects_without_auth_is_unauthorized_and_has_no_allow_header() {
+    let response = request(Method::POST, "/projects").await;
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    let allow = response
+        .headers()
+        .get(header::ALLOW)
+        .map(|v| v.to_str().unwrap_or("").to_string());
+    assert!(
+        allow.is_none(),
+        "Allow must not leak allowed methods on 401, got {allow:?}, headers: {:?}",
+        response.headers()
+    );
+}
+
+#[tokio::test]
+async fn cross_origin_preflight_does_not_allow_the_origin() {
+    let response = test_app()
+        .oneshot(
+            Request::builder()
+                .method(Method::OPTIONS)
+                .uri("/projects")
+                .header(header::ORIGIN, "https://evil.example")
+                .header(header::ACCESS_CONTROL_REQUEST_METHOD, "GET")
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("router should respond");
+    assert!(
+        response
+            .headers()
+            .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
+            .is_none(),
+        "the API is same-origin and must not emit Access-Control-Allow-Origin"
     );
 }
