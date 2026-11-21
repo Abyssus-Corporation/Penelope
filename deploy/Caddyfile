@@ -1,0 +1,38 @@
+# Reference Caddyfile for serving the built dashboard (`apps/web/dist`)
+# with automatic TLS. Replace the site address before using this in production.
+#
+# Security header values are generated from `apps/web/security-headers.ts`
+# (`pnpm gen:caddy-headers`). Cache-Control is set here by path, using the
+# same tokens as the Vite preview server.
+#
+# Differences from the Vite preview server (which speaks HTTP):
+#   - Strict-Transport-Security
+#   - upgrade-insecure-requests on the enforced CSP
+
+{$DASHBOARD_DOMAIN:dashboard.example.com} {
+	encode gzip zstd
+	root * {$DASHBOARD_ROOT:/srv/penelope/dashboard}
+
+	import security-headers.caddy
+
+	@immutable path /assets/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	@mutable not path /assets/*
+	header @mutable Cache-Control "no-cache"
+
+	# Hashed assets must 404 when missing, never fall back to index.html.
+	handle /assets/* {
+		file_server
+	}
+
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+
+	handle_errors {
+		import security-headers.caddy
+		header Cache-Control "no-store"
+	}
+}

@@ -153,6 +153,9 @@ Penelope uses **pnpm workspaces**:
 Penelope/
 ├── apps/
 │   └── web/                  React SPA
+│       ├── e2e/              Playwright tests against vite preview
+│       ├── public/           favicon.svg
+│       ├── src/fonts/        Obel Mono (OFL) plus license files; Inter and Newsreader come from fontsource
 │       ├── src/
 │       │   ├── components/   ui/ and dashboard/
 │       │   ├── hooks/        useTheme
@@ -163,10 +166,16 @@ Penelope/
 │       │   └── types/        project.ts
 │       ├── index.html
 │       ├── package.json
+│       ├── playwright.config.ts
+│       ├── security-headers.ts
 │       ├── tailwind.config.ts
 │       └── vite.config.ts
 │
 │   └── api/                  Axum API
+│
+├── deploy/
+│   ├── Caddyfile             Reference TLS proxy, CSP, and cache headers
+│   └── security-headers.caddy  Generated from apps/web/security-headers.ts
 │
 ├── packages/
 │   ├── api-types/            @penelope/api-types (generated OpenAPI types)
@@ -199,10 +208,29 @@ Penelope/
 pnpm install          # install all workspace dependencies
 pnpm dev              # start the web app dev server (Vite HMR)
 pnpm build            # production build
+pnpm preview          # serve the production build (CSP and cache headers on)
 pnpm typecheck        # TypeScript type-check across all packages
 pnpm lint             # ESLint across all packages
 pnpm format           # Prettier across apps/**
+pnpm test             # Vitest unit tests
+pnpm test:e2e         # Playwright against vite preview
+pnpm gen:caddy-headers  # regenerate deploy/security-headers.caddy
+pnpm smoke:headers    # compare preview and Caddy headers to security-headers.ts
 ```
+
+Dashboard typography is self-hosted (Inter Variable and Newsreader Variable via fontsource, Obel
+Mono in `apps/web/src/fonts` so Vite hashes the file into `/assets/`), so the production CSP can
+use `font-src 'self'` and the UI never calls Google Fonts or Fontshare. `pnpm dev` does not set a
+Content-Security-Policy, because Vite HMR needs a looser policy. `pnpm preview` and the reference
+[`deploy/Caddyfile`](deploy/Caddyfile) apply the same enforced CSP, including Trusted Types
+(`require-trusted-types-for 'script'` and `trusted-types 'none'`), `nosniff`, `Referrer-Policy`,
+`frame-ancestors 'none'`, and cache rules (`no-cache` for HTML, immutable long cache for hashed
+`/assets/*` on 200, `no-store` on errors). Header values live in
+[`apps/web/security-headers.ts`](apps/web/security-headers.ts); `pnpm gen:caddy-headers` writes
+[`deploy/security-headers.caddy`](deploy/security-headers.caddy) and CI fails if that file drifts.
+The Caddyfile also sets HSTS (`max-age=31536000`, no `includeSubDomains`) and
+`upgrade-insecure-requests` for TLS. Missing `/assets/*` files 404; they are never rewritten to
+`index.html`.
 
 ### API
 

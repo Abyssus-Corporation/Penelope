@@ -16,7 +16,11 @@
     "format:check": "prettier --check \"apps/**/*.{ts,tsx,css,json,md}\" \"packages/**/*.{ts,tsx,css,json,md}\" \"*.md\"",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "preview": "pnpm --filter @penelope/web preview",
+    "test:e2e": "pnpm --filter @penelope/web test:e2e",
+    "gen:caddy-headers": "node --experimental-strip-types apps/web/scripts/gen-caddy-headers.ts",
+    "smoke:headers": "node --experimental-strip-types apps/web/scripts/smoke-headers.ts"
   },
   "devDependencies": {
     "prettier": "^3.10.1",

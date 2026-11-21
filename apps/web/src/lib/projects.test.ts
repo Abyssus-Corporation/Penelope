@@ -21,6 +21,18 @@ describe("validateProjectName", () => {
     expect(validateProjectName("-api", [])).toBe("invalid");
   });
 
+  it("rejects a slash anywhere in the name", () => {
+    expect(validateProjectName("foo/bar", [])).toBe("invalid");
+    expect(validateProjectName("/leading", [])).toBe("invalid");
+    expect(validateProjectName("trailing/", [])).toBe("invalid");
+    expect(validateProjectName("preview/pr-42", [])).toBe("invalid");
+  });
+
+  it("rejects a leading dot or underscore", () => {
+    expect(validateProjectName(".dot", [])).toBe("invalid");
+    expect(validateProjectName("_under", [])).toBe("invalid");
+  });
+
   it("detects taken names case-insensitively after trimming", () => {
     expect(validateProjectName("  Penelope ", ["penelope"])).toBe("taken");
   });

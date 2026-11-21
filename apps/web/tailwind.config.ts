@@ -6,9 +6,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Inter Variable", "Inter", "system-ui", "sans-serif"],
         mono: ["Obel Mono", "monospace"],
-        display: ["Sentient", "Georgia", "serif"],
+        display: ["Newsreader Variable", "Newsreader", "Georgia", "serif"],
       },
       colors: {
         background: "hsl(var(--background))",
