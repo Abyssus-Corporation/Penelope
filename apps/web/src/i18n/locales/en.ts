@@ -64,6 +64,7 @@ export const en = {
       themeSystem: "System",
       openNavigation: "Open navigation",
       navigation: "Navigation",
+      closeNavigation: "Close navigation",
       groups: {
         general: "General",
         admin: "Admin",

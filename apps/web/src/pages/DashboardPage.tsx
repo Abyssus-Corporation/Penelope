@@ -10,6 +10,7 @@ import {
   Plus,
   Search,
   Columns2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
@@ -35,7 +36,15 @@ const ICON_BUTTON =
   "flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
 
 /** Below `md` the sidebar leaves the layout and opens as a modal drawer instead. */
-function MobileNav({ label, title }: { label: string; title: string }) {
+function MobileNav({
+  label,
+  title,
+  closeLabel,
+}: {
+  label: string;
+  title: string;
+  closeLabel: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -50,6 +59,13 @@ function MobileNav({ label, title }: { label: string; title: string }) {
           className="fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-background shadow-xl focus:outline-none data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in"
         >
           <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
+          {/* Sits on the overlay beside the panel, so it never covers sidebar controls. */}
+          <DialogPrimitive.Close
+            aria-label={closeLabel}
+            className="absolute -right-10 top-3 flex size-8 items-center justify-center rounded bg-background text-foreground shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X size={15} strokeWidth={1.5} aria-hidden="true" />
+          </DialogPrimitive.Close>
           <Sidebar collapsed={false} className="w-full" />
         </DialogPrimitive.Content>
       </DialogPortal>
@@ -68,6 +84,26 @@ export function DashboardPage() {
 
   const filtered = projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
+  // Rendered at two DOM positions (one hidden per breakpoint) so tab order follows the layout.
+  const newProject = (visibility: string) => (
+    <CreateProjectDialog
+      existingProjects={projects}
+      onCreate={(project) => setProjects((prev) => [project, ...prev])}
+      trigger={
+        <button
+          type="button"
+          className={cn(
+            "h-[30px] shrink-0 items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+            visibility,
+          )}
+        >
+          <Plus size={12} aria-hidden="true" />
+          {d.projects.new}
+        </button>
+      }
+    />
+  );
+
   return (
     <div className="flex h-dvh bg-background">
       <Sidebar collapsed={collapsed} className="hidden md:flex" />
@@ -82,7 +118,11 @@ export function DashboardPage() {
         <header className="flex shrink-0 flex-wrap items-center gap-x-3 border-b border-border px-4 lg:flex-nowrap">
           {/* Left: menu or collapse + title */}
           <div className="mr-auto flex h-14 min-w-0 items-center gap-3">
-            <MobileNav label={d.nav.openNavigation} title={d.nav.navigation} />
+            <MobileNav
+              label={d.nav.openNavigation}
+              title={d.nav.navigation}
+              closeLabel={d.nav.closeNavigation}
+            />
             <button
               onClick={() => setCollapsed((c) => !c)}
               className={cn(ICON_BUTTON, "hidden md:flex")}
@@ -101,6 +141,9 @@ export function DashboardPage() {
               </span>
             </div>
           </div>
+
+          {/* Below lg "New project" sits on the first row, so it comes first in the DOM too. */}
+          {newProject("flex lg:hidden")}
 
           {/* Search + size toggle: full-width second row below lg */}
           <div className="order-last flex w-full items-center gap-2 pb-3 lg:order-none lg:w-auto lg:pb-0">
@@ -152,20 +195,7 @@ export function DashboardPage() {
             </ToggleGroup.Root>
           </div>
 
-          {/* New project */}
-          <CreateProjectDialog
-            existingProjects={projects}
-            onCreate={(project) => setProjects((prev) => [project, ...prev])}
-            trigger={
-              <button
-                type="button"
-                className="flex h-[30px] shrink-0 items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-              >
-                <Plus size={12} aria-hidden="true" />
-                {d.projects.new}
-              </button>
-            }
-          />
+          {newProject("hidden lg:flex")}
         </header>
 
         {/* Projects grid */}
