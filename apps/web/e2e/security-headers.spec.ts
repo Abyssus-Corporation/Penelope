@@ -158,6 +158,38 @@ test.describe("pages under the production CSP", () => {
     });
   }
 
+  test("a saved dark theme is set before the first frame, with no CSP violations", async ({
+    page,
+  }) => {
+    const signals = await collectPageSignals(page);
+    await page.addInitScript(() => {
+      localStorage.setItem("theme", "dark");
+      // The first animation frame callback runs before the first frame is painted.
+      requestAnimationFrame(() => {
+        (window as unknown as { __firstFrameDark?: boolean }).__firstFrameDark =
+          document.documentElement.classList.contains("dark");
+      });
+    });
+    for (const path of ["/login", "/this-route-does-not-exist", AUTHED_PATH]) {
+      await page.goto(path);
+      await expect(page.locator("html")).toHaveClass(/\bdark\b/);
+      const firstFrameDark = await page.evaluate(
+        () => (window as unknown as { __firstFrameDark?: boolean }).__firstFrameDark,
+      );
+      expect(firstFrameDark, `${path}: html.dark at the first frame`).toBe(true);
+    }
+
+    // Same-origin, stable path: revalidated on each load (no-cache), served as JavaScript.
+    const script = await fetch(new URL("/theme-init.js", BASE));
+    expect(script.status).toBe(200);
+    expect(script.headers.get("content-type")).toMatch(/^text\/javascript/);
+    expect(script.headers.get("cache-control")).toBe(CACHE_CONTROL_HTML);
+    expect(script.headers.get("content-security-policy")).toBe(CONTENT_SECURITY_POLICY);
+
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
   test("forgot password submits without CSP violations", async ({ page }) => {
     const signals = await collectPageSignals(page);
     await page.goto("/forgot-password");
