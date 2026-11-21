@@ -53,7 +53,7 @@ export function LoginPage() {
   const a = t.auth.login;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       {/* Header — just the wordmark */}
       <header className="border-b border-border">
         <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center px-5 sm:px-8">

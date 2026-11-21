@@ -212,7 +212,7 @@ export function SignupPage() {
   const animClass = direction === "forward" ? "animate-step-forward" : "animate-step-back";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       {/* Header */}
       <header className="border-b border-border">
         {/* Stacked below sm so the wordmark and the sign-in prompt never collide at 320px. */}
