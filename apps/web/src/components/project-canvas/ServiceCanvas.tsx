@@ -14,6 +14,7 @@ import {
   Panel,
   ReactFlow,
   ReactFlowProvider,
+  applyNodeChanges,
   useReactFlow,
   type Edge,
   type OnNodesChange,
@@ -92,10 +93,10 @@ function Canvas({ projectId, services, onOpen }: ServiceCanvasProps) {
   // Persist once a move settles (drag end or an arrow-key step), never mid-drag.
   const settled = useRef(false);
   const onNodesChange = useCallback<OnNodesChange<ServiceNodeType>>((changes) => {
-    if (changes.getByType("position").some((change) => !change.dragging)) {
+    if (changes.some((change) => change.type === "position" && !change.dragging)) {
       settled.current = true;
     }
-    setNodes((current) => changes.applyTo(current));
+    setNodes((current) => applyNodeChanges(changes, current));
   }, []);
   useEffect(() => {
     if (!settled.current) return;
