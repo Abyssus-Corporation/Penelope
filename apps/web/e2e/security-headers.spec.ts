@@ -1,3 +1,5 @@
+import { execFileSync, spawn, type ChildProcess } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { expect, test, type Page, type Request } from "@playwright/test";
 import {
   CACHE_CONTROL_ERROR,
@@ -16,9 +18,9 @@ test.use({ storageState: { cookies: [], origins: [] } });
 const PUBLIC_PATHS = ["/login", "/signup"] as const;
 const AUTHED_PATH = "/dashboard";
 // Client-side routes added after #9; the preview server falls back to index.html for each.
+// Production builds ship no mock API, so every project route shows the unavailable state.
 const NEW_SCREENS = [
-  { path: "/projects/acme-production", heading: "acme-production" },
-  { path: "/projects/does-not-exist", heading: "Project not found" },
+  { path: "/projects/acme-production", heading: "Project data isn't available" },
   { path: "/forgot-password", heading: "Reset your password, we'll email you a link." },
   { path: "/this-route-does-not-exist", heading: "Page not found" },
 ] as const;
@@ -31,13 +33,13 @@ type CspViolation = {
   originalPolicy: string;
 };
 
-async function collectPageSignals(page: Page) {
+async function collectPageSignals(page: Page, origin: string = BASE.origin) {
   const thirdParty: Request[] = [];
   const violations: CspViolation[] = [];
 
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.origin !== BASE.origin) {
+    if (url.origin !== origin) {
       thirdParty.push(request);
     }
   });
@@ -190,13 +192,14 @@ test.describe("pages under the production CSP", () => {
     expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
   });
 
-  test("forgot password submits without CSP violations", async ({ page }) => {
+  test("forgot password without an API shows its error, with no CSP violations", async ({
+    page,
+  }) => {
     const signals = await collectPageSignals(page);
     await page.goto("/forgot-password");
     await page.getByLabel("Email").fill("audit@example.com");
     await page.getByRole("button", { name: "Send reset link" }).click();
-    await expect(page.getByRole("heading", { name: "Check your email" })).toBeFocused();
-    await expect(page.getByText("If an account exists for audit@example.com")).toBeVisible();
+    await expect(page.getByText("Something went wrong. Try again in a moment.")).toBeVisible();
     assertNoSecurityViolations(await signals.readViolations());
     expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
   });
@@ -206,14 +209,15 @@ test.describe("pages under the production CSP", () => {
     await page.goto(AUTHED_PATH);
     await page.getByRole("link", { name: /^acme-production/ }).click();
     await expect(page).toHaveURL(/\/projects\/acme-production$/);
-    await expect(page.getByRole("heading", { level: 1, name: "acme-production" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Services" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Project data isn't available" }),
+    ).toBeVisible();
     // Same dashboard shell as /dashboard: sidebar with Projects, plus a breadcrumb.
     await expect(
       page.getByRole("complementary").getByRole("link", { name: "Projects" }),
     ).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
-      "acme-production",
+      "Project data isn't available",
     );
     assertNoSecurityViolations(await signals.readViolations());
     expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
@@ -278,5 +282,238 @@ test.describe("pages under the production CSP", () => {
           violation.violatedDirective === "trusted-types",
       ),
     ).toBe(true);
+  });
+});
+
+// The mock API only exists when import.meta.env.DEV is true, so the canvas is
+// exercised on a development-mode build served by the same preview server and
+// headers (strict CSP + Trusted Types) as production.
+const DEV_PORT = Number(process.env.DEV_PREVIEW_PORT || 4174);
+const DEV_BASE = `http://127.0.0.1:${DEV_PORT}`;
+const DEV_OUT_DIR = "node_modules/.cache/e2e-dev-dist";
+const WEB_ROOT = fileURLToPath(new URL("..", import.meta.url));
+
+test.describe("canvas on a dev-mode build under the production CSP", () => {
+  let server: ChildProcess | undefined;
+
+  test.beforeAll(async () => {
+    test.setTimeout(180_000);
+    execFileSync(
+      "pnpm",
+      ["exec", "vite", "build", "--mode", "development", "--outDir", DEV_OUT_DIR, "--emptyOutDir"],
+      { cwd: WEB_ROOT, env: { ...process.env, NODE_ENV: "development" }, stdio: "ignore" },
+    );
+    server = spawn(
+      "pnpm",
+      [
+        "exec",
+        "vite",
+        "preview",
+        "--outDir",
+        DEV_OUT_DIR,
+        "--host",
+        "127.0.0.1",
+        "--port",
+        String(DEV_PORT),
+        "--strictPort",
+      ],
+      { cwd: WEB_ROOT, stdio: "ignore", detached: true },
+    );
+    for (let i = 0; i < 100; i++) {
+      const ok = await fetch(DEV_BASE).then(
+        (response) => response.ok,
+        () => false,
+      );
+      if (ok) return;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    throw new Error(`dev-mode preview did not start on ${DEV_BASE}`);
+  });
+
+  test.afterAll(() => {
+    if (server?.pid) process.kill(-server.pid);
+  });
+
+  test("serves the same security headers", async () => {
+    const response = await fetch(`${DEV_BASE}/projects/acme-production`);
+    expect(response.headers.get("content-security-policy")).toBe(CONTENT_SECURITY_POLICY);
+  });
+
+  test("canvas, keyboard sheet and list view have no CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page, DEV_BASE);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`${DEV_BASE}/projects/acme-production`);
+    const canvas = page.getByRole("region", { name: "Service canvas" });
+    await expect(canvas).toBeVisible();
+    await expect(canvas.locator(".react-flow__node")).toHaveCount(4);
+    await expect(canvas.locator(".react-flow__edge")).toHaveCount(3);
+
+    // React Flow's stylesheet arrives as a same-origin <link>; no <style> of its own.
+    const sheets = await page.evaluate(() => ({
+      links: Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
+        (link) => new URL(link.href).pathname,
+      ),
+      flowStyleTags: Array.from(document.querySelectorAll("style")).filter((style) =>
+        style.textContent?.includes("react-flow"),
+      ).length,
+    }));
+    expect(sheets.links.some((href) => /^\/assets\/ServiceCanvas-[\w-]+\.css$/.test(href))).toBe(
+      true,
+    );
+    expect(sheets.flowStyleTags).toBe(0);
+
+    const node = canvas.getByRole("button", { name: /^api Repository: acme\/api/ });
+    await node.focus();
+    await page.keyboard.press("Enter");
+    const sheet = page.getByRole("dialog", { name: "api" });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole("tab", { name: "Variables" }).click();
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(node).toBeFocused();
+
+    // Drag a node, then zoom and fit with the controls (all inline style writes).
+    await canvas.locator('.react-flow__node[data-id="web"]').dragTo(canvas, {
+      targetPosition: { x: 120, y: 80 },
+    });
+    await page.getByRole("button", { name: "Zoom in" }).click();
+    await page.getByRole("button", { name: "Fit all services in view" }).click();
+
+    await page.getByRole("radio", { name: "List" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Showing list view" })).toBeAttached();
+    await page
+      .getByRole("list", { name: "Services" })
+      .getByRole("button", { name: /^redis/ })
+      .click();
+    await expect(page.getByRole("dialog", { name: "redis" })).toBeVisible();
+
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
+  test("30+ services render and stay usable, with no CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page, DEV_BASE);
+    await page.goto(`${DEV_BASE}/projects/fleet`);
+    const canvas = page.getByRole("region", { name: "Service canvas" });
+    await expect(canvas.locator(".react-flow__node")).toHaveCount(35);
+    await page.getByRole("button", { name: "Zoom out" }).click();
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
+  test("below 768px a fresh load shows the list (no canvas flash); a toggled canvas stays legible and touch-pannable", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 720 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const page = await context.newPage();
+    const signals = await collectPageSignals(page, DEV_BASE);
+    // Record whether React Flow ever mounts before the user asks for it.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __canvasMounted?: boolean };
+      w.__canvasMounted = false;
+      new MutationObserver(() => {
+        if (document.querySelector(".react-flow")) w.__canvasMounted = true;
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await page.goto(`${DEV_BASE}/projects/fleet`);
+    await expect(page.getByRole("list", { name: "Services" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "List" })).toHaveAttribute("data-state", "on");
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __canvasMounted?: boolean }).__canvasMounted,
+      ),
+    ).toBe(false);
+
+    await page.getByRole("radio", { name: "Canvas" }).click();
+    const canvas = page.getByRole("region", { name: "Service canvas" });
+    await expect(canvas.locator(".react-flow__node")).toHaveCount(35);
+    const viewport = canvas.locator(".react-flow__viewport");
+    const scale = async () =>
+      viewport.evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).a);
+    const translate = async () =>
+      viewport.evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
+    await expect.poll(scale).toBeGreaterThanOrEqual(0.75);
+    // The first column is on screen, not a shrunken overview of all 35.
+    await expect(canvas.locator('.react-flow__node[data-id="edge-gateway-01"]')).toBeInViewport();
+
+    // One-finger swipe on the background pans (touch events via CDP).
+    const before = await translate();
+    const cdp = await context.newCDPSession(page);
+    const box = (await canvas.boundingBox())!;
+    const y = box.y + 20; // empty background above the first column
+    const touch = (type: string, x: number) =>
+      cdp.send("Input.dispatchTouchEvent", {
+        type,
+        touchPoints: type === "touchEnd" ? [] : [{ x, y }],
+      });
+    await touch("touchStart", box.x + 260);
+    for (const x of [240, 200, 160, 120]) await touch("touchMove", box.x + x);
+    await touch("touchEnd", 0);
+    await expect.poll(translate).toBeLessThan(before - 50);
+
+    await page.getByRole("button", { name: "Center on the first services" }).click();
+    await expect.poll(scale).toBeGreaterThanOrEqual(0.75);
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+    await context.close();
+  });
+
+  test("wrapped long names never make cards overlap; each card opens its own sheet", async ({
+    page,
+  }) => {
+    const signals = await collectPageSignals(page, DEV_BASE);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(
+      `${DEV_BASE}/projects/northwind-industries-holdings-customer-portal-production-eu-west`,
+    );
+    const nodes = page.getByRole("region", { name: "Service canvas" }).locator(".react-flow__node");
+    await expect(nodes).toHaveCount(4);
+    // Let the measured relayout and its refit settle.
+    await page.waitForTimeout(500);
+    const boxes = await nodes.evaluateAll((elements) =>
+      elements.map((element) => {
+        const r = element.getBoundingClientRect();
+        return {
+          id: (element as HTMLElement).dataset.id!,
+          x: r.x,
+          y: r.y,
+          w: r.width,
+          h: r.height,
+        };
+      }),
+    );
+    for (const [i, a] of boxes.entries()) {
+      for (const b of boxes.slice(i + 1)) {
+        const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+        expect(overlap, `${a.id} overlaps ${b.id}`).toBe(false);
+      }
+    }
+    // Clicking the bottom (status/deploy row) of the tall card opens that card's sheet.
+    const frontend = boxes.find(
+      (box) => box.id === "customer-portal-server-side-rendering-frontend",
+    )!;
+    await page.mouse.click(frontend.x + frontend.w / 2, frontend.y + frontend.h - 8);
+    await expect(
+      page.getByRole("dialog", { name: "customer-portal-server-side-rendering-frontend" }),
+    ).toBeVisible();
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
+  test("not found and forgot password (mock API) have no CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page, DEV_BASE);
+    await page.goto(`${DEV_BASE}/projects/does-not-exist`);
+    await expect(page.getByRole("heading", { level: 1, name: "Project not found" })).toBeVisible();
+
+    await page.goto(`${DEV_BASE}/forgot-password`);
+    await page.getByLabel("Email").fill("audit@example.com");
+    await page.getByRole("button", { name: "Send reset link" }).click();
+    await expect(page.getByRole("heading", { name: "Check your email" })).toBeFocused();
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
   });
 });

@@ -1,3 +1,4 @@
+import { CANVAS_FIXTURE_PROJECTS } from "@/components/project-canvas/fixtures";
 import { PROJECTS } from "@/lib/mock-data";
 import type { ApiClient, ApiProject } from "./client";
 
@@ -51,7 +52,12 @@ function respond<T>(value: () => T): Promise<T> {
 export const mockApi: ApiClient = {
   projects: {
     get: (id) =>
-      respond(() => [...PROJECTS, ...EXTRA_PROJECTS].find((project) => project.id === id) ?? null),
+      respond(
+        () =>
+          [...PROJECTS, ...EXTRA_PROJECTS, ...CANVAS_FIXTURE_PROJECTS].find(
+            (project) => project.id === id,
+          ) ?? null,
+      ),
   },
   auth: {
     requestPasswordReset: () => respond(() => undefined),
