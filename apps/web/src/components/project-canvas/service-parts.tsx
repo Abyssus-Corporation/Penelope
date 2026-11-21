@@ -1,11 +1,11 @@
 import {
+  AppWindow,
   Clock,
   Container,
   Cpu,
   Database,
   FileCode,
   GitBranch,
-  Globe,
   MemoryStick,
   Server,
   type LucideIcon,
@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 import type { CanvasService, ServiceKind, ServiceSourceType } from "./types";
 
 const KIND_ICONS: Record<ServiceKind, LucideIcon> = {
-  web: Globe,
+  // Not Globe: that is the domain icon.
+  web: AppWindow,
   service: Server,
   worker: Cpu,
   cron: Clock,

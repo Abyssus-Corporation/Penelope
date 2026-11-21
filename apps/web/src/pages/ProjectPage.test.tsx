@@ -51,7 +51,7 @@ describe("ProjectPage", () => {
     expect(screen.getByText(/GitHub · acme\/app/)).toBeVisible();
     // Wide screens start on the canvas; both services are focusable nodes there.
     const canvas = await screen.findByRole("region", { name: "Service canvas" }, { timeout: 5000 });
-    expect(canvas).toHaveAccessibleDescription(/Enter opens a service/);
+    expect(canvas).toHaveAccessibleDescription(/Enter or Space opens a service/);
     await waitFor(() =>
       expect(canvas.querySelector('.react-flow__node[data-id="worker"]')).toHaveTextContent(
         /^worker.*No source connected.*Failed.*No deploys yet.*Service, No connections$/,
