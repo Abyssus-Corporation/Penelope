@@ -58,8 +58,8 @@ feat(dashboard): add project search filtering
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/viincnt/penelope.git
-cd penelope
+git clone https://github.com/Abyssus-Corporation/Penelope.git
+cd Penelope
 pnpm install
 ```
 
