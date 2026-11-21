@@ -51,6 +51,19 @@ export default {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
+        // Dialog content is centered with translate(-50%, -50%), so keep it in the keyframes.
+        "dialog-in": {
+          from: { opacity: "0", transform: "translate(-50%, -48%) scale(0.97)" },
+          to: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+        },
+        "dialog-out": {
+          from: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+          to: { opacity: "0", transform: "translate(-50%, -48%) scale(0.97)" },
+        },
         rise: {
           from: { opacity: "0", transform: "translateY(16px)" },
         },
@@ -63,6 +76,9 @@ export default {
       },
       animation: {
         "fade-in": "fade-in 0.2s ease-out",
+        "fade-out": "fade-out 150ms ease-in",
+        "dialog-in": "dialog-in 200ms cubic-bezier(0.16,1,0.3,1)",
+        "dialog-out": "dialog-out 150ms ease-in",
         rise: "rise 900ms cubic-bezier(0.16,1,0.3,1) both",
         "step-forward": "step-forward 380ms cubic-bezier(0.16,1,0.3,1) both",
         "step-back": "step-back    380ms cubic-bezier(0.16,1,0.3,1) both",
