@@ -1,0 +1,154 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        # Reads the pnpm version from "packageManager" in package.json.
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      # Cache keyed only on the lockfile. Saved only on push to main, never from PRs.
+      - name: Restore pnpm store
+        id: pnpm-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
+
+      - name: Save pnpm store
+        if: github.event_name == 'push' && steps.pnpm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+  rust:
+    name: rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The job always runs and reports a status so it can be a required check.
+      # Until a Cargo.toml is committed, every step below is skipped and the job passes.
+      - name: Detect Rust workspace
+        id: detect
+        run: |
+          if [ -n "$(git ls-files '*Cargo.toml')" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no Cargo.toml, skipping"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Require deny.toml
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          if [ ! -f deny.toml ]; then
+            echo "::error file=deny.toml::Cargo.toml is present but deny.toml is missing. Add a deny.toml at the repo root so cargo deny can check licenses, bans and advisories."
+            exit 1
+          fi
+
+      # Version and components come from rust-toolchain.toml.
+      - name: Setup Rust toolchain
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          rustup toolchain install
+          rustup show active-toolchain
+
+      - name: Cache cargo
+        if: steps.detect.outputs.present == 'true'
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          save-if: ${{ github.event_name == 'push' }}
+
+      - name: Install cargo-audit and cargo-deny
+        if: steps.detect.outputs.present == 'true'
+        uses: taiki-e/install-action@25f51f6b1bf4e18876107cece836f4f77ac17c8c # v2.90.7
+        with:
+          tool: cargo-audit@0.23.0,cargo-deny@0.22.0
+
+      - name: cargo fmt
+        if: steps.detect.outputs.present == 'true'
+        run: cargo fmt --all --check
+
+      - name: cargo clippy
+        if: steps.detect.outputs.present == 'true'
+        run: cargo clippy --locked --all-targets --all-features -- -D warnings
+
+      - name: cargo test
+        if: steps.detect.outputs.present == 'true'
+        run: cargo test --locked --all
+
+      - name: cargo audit
+        if: steps.detect.outputs.present == 'true'
+        run: cargo audit --deny warnings
+
+      - name: cargo deny
+        if: steps.detect.outputs.present == 'true'
+        run: cargo deny check
