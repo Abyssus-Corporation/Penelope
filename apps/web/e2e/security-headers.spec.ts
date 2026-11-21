@@ -462,6 +462,48 @@ test.describe("canvas on a dev-mode build under the production CSP", () => {
     await context.close();
   });
 
+  test("wrapped long names never make cards overlap; each card opens its own sheet", async ({
+    page,
+  }) => {
+    const signals = await collectPageSignals(page, DEV_BASE);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(
+      `${DEV_BASE}/projects/northwind-industries-holdings-customer-portal-production-eu-west`,
+    );
+    const nodes = page.getByRole("region", { name: "Service canvas" }).locator(".react-flow__node");
+    await expect(nodes).toHaveCount(4);
+    // Let the measured relayout and its refit settle.
+    await page.waitForTimeout(500);
+    const boxes = await nodes.evaluateAll((elements) =>
+      elements.map((element) => {
+        const r = element.getBoundingClientRect();
+        return {
+          id: (element as HTMLElement).dataset.id!,
+          x: r.x,
+          y: r.y,
+          w: r.width,
+          h: r.height,
+        };
+      }),
+    );
+    for (const [i, a] of boxes.entries()) {
+      for (const b of boxes.slice(i + 1)) {
+        const overlap = a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+        expect(overlap, `${a.id} overlaps ${b.id}`).toBe(false);
+      }
+    }
+    // Clicking the bottom (status/deploy row) of the tall card opens that card's sheet.
+    const frontend = boxes.find(
+      (box) => box.id === "customer-portal-server-side-rendering-frontend",
+    )!;
+    await page.mouse.click(frontend.x + frontend.w / 2, frontend.y + frontend.h - 8);
+    await expect(
+      page.getByRole("dialog", { name: "customer-portal-server-side-rendering-frontend" }),
+    ).toBeVisible();
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
   test("not found and forgot password (mock API) have no CSP violations", async ({ page }) => {
     const signals = await collectPageSignals(page, DEV_BASE);
     await page.goto(`${DEV_BASE}/projects/does-not-exist`);

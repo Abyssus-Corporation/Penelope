@@ -15,6 +15,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   applyNodeChanges,
+  useNodesInitialized,
   useReactFlow,
   type Edge,
   type OnNodesChange,
@@ -57,6 +58,19 @@ function Canvas({ projectId, services, onOpen }: ServiceCanvasProps) {
   const reducedMotion = useReducedMotion();
   const narrow = useMediaQuery(NARROW_QUERY);
 
+  // Saved positions win; everything else starts on the estimated layout and is
+  // re-stacked once React Flow has measured the real card heights (below).
+  const [savedIds] = useState(
+    () =>
+      new Set(
+        Object.keys(
+          loadPositions(
+            projectId,
+            services.map((service) => service.id),
+          ),
+        ),
+      ),
+  );
   const [nodes, setNodes] = useState<ServiceNodeType[]>(() => {
     const layout = layoutServices(services);
     const saved = loadPositions(
@@ -76,6 +90,27 @@ function Canvas({ projectId, services, onOpen }: ServiceCanvasProps) {
 
   // Only the first fit uses this; later fits come from the controls.
   const [initialFit] = useState(() => (narrow ? narrowFitOptions(nodes) : WIDE_FIT));
+
+  // Wrapped names make some cards taller than the estimate. Once every card is
+  // measured, stack each column on the real heights (unsaved nodes only), then
+  // re-run the first fit so the view matches the final layout.
+  const flow = useReactFlow();
+  const measured = useNodesInitialized();
+  const relaidOut = useRef(false);
+  useEffect(() => {
+    if (!measured || relaidOut.current) return;
+    relaidOut.current = true;
+    if (savedIds.size === services.length) return;
+    const heights: Record<string, number> = Object.create(null);
+    for (const node of nodes) if (node.measured?.height) heights[node.id] = node.measured.height;
+    const layout = layoutServices(services, heights);
+    setNodes((current) =>
+      current.map((node) =>
+        savedIds.has(node.id) || !layout[node.id] ? node : { ...node, position: layout[node.id]! },
+      ),
+    );
+    requestAnimationFrame(() => void flow.fitView({ ...initialFit, duration: 0 }));
+  }, [measured, nodes, services, savedIds, flow, initialFit]);
 
   const edges = useMemo<Edge[]>(
     () =>

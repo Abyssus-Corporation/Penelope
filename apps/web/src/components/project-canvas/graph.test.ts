@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { ApiProject } from "@/api";
 import { CANVAS_FIXTURE_PROJECTS, SERVICE_DETAILS } from "./fixtures";
-import { NODE_WIDTH, layoutServices, toCanvasServices, toEdges } from "./graph";
+import {
+  DEFAULT_NODE_HEIGHT,
+  NODE_WIDTH,
+  ROW_GAP,
+  layoutServices,
+  toCanvasServices,
+  toEdges,
+} from "./graph";
 
 const fixture = (id: string) => {
   const project = CANVAS_FIXTURE_PROJECTS.find((p) => p.id === id)!;
@@ -82,5 +89,37 @@ describe("service graph", () => {
     const services = fixture("islands");
     expect(toEdges(services)).toEqual([]);
     expect(new Set(Object.values(layoutServices(services)).map((p) => p.x)).size).toBe(1);
+  });
+
+  it("stacks rows on measured heights so tall (wrapped) cards never overlap", () => {
+    const services = fixture("islands"); // one column, four services
+    const ids = services.map((s) => s.id);
+    const heights = { [ids[0]!]: 171, [ids[1]!]: 97, [ids[2]!]: Number.NaN, [ids[3]!]: 120 };
+    const positions = layoutServices(services, heights);
+    const ys = ids.map((id) => positions[id]!.y);
+    expect(ys).toEqual([
+      0,
+      171 + ROW_GAP,
+      171 + 97 + 2 * ROW_GAP,
+      // NaN (unmeasured) falls back to the estimate.
+      171 + 97 + DEFAULT_NODE_HEIGHT + 3 * ROW_GAP,
+    ]);
+    for (let i = 1; i < ids.length; i++) {
+      const above = ids[i - 1]!;
+      const height = Number.isFinite(heights[above]) ? heights[above]! : DEFAULT_NODE_HEIGHT;
+      expect(positions[ids[i]!]!.y).toBeGreaterThanOrEqual(positions[above]!.y + height);
+    }
+  });
+
+  it("restarts the stack in each wrapped column", () => {
+    const services = fixture("fleet");
+    const tall = Object.fromEntries(services.map((s) => [s.id, 200]));
+    const positions = layoutServices(services, tall);
+    const byX = new Map<number, number[]>();
+    for (const { x, y } of Object.values(positions)) byX.set(x, [...(byX.get(x) ?? []), y]);
+    for (const ys of byX.values()) {
+      expect(Math.min(...ys)).toBe(0);
+      expect(Math.max(...ys)).toBeLessThanOrEqual(5 * (200 + ROW_GAP));
+    }
   });
 });

@@ -3,7 +3,9 @@ import type { CanvasService, ServiceDetails } from "./types";
 
 export const NODE_WIDTH = 240;
 const COLUMN_GAP = 96;
-const ROW_HEIGHT = 136;
+/** Estimated card height before React Flow has measured it (one-line name and source). */
+export const DEFAULT_NODE_HEIGHT = 112;
+export const ROW_GAP = 24;
 /** Long layers wrap into extra columns so 30+ services stay roughly screen-shaped. */
 const MAX_ROWS = 6;
 
@@ -58,6 +60,8 @@ export function toEdges(services: CanvasService[]): ServiceEdge[] {
  */
 export function layoutServices(
   services: CanvasService[],
+  /** Measured card heights by id; rows stack on these so wrapped names never overlap. */
+  heights: Readonly<Record<string, number>> = {},
 ): Record<string, { x: number; y: number }> {
   const byId = new Map(services.map((service) => [service.id, service]));
   const height = new Map<string, number>();
@@ -91,10 +95,13 @@ export function layoutServices(
   for (const layer of layers) {
     if (!layer) continue;
     const columns = Math.ceil(layer.length / MAX_ROWS);
+    let y = 0;
     layer.forEach((id, index) => {
       const column = Math.floor(index / MAX_ROWS);
-      const row = index % MAX_ROWS;
-      positions[id] = { x: x + column * (NODE_WIDTH + COLUMN_GAP), y: row * ROW_HEIGHT };
+      if (index % MAX_ROWS === 0) y = 0;
+      positions[id] = { x: x + column * (NODE_WIDTH + COLUMN_GAP), y };
+      const height = Object.prototype.hasOwnProperty.call(heights, id) ? heights[id]! : NaN;
+      y += (Number.isFinite(height) && height > 0 ? height : DEFAULT_NODE_HEIGHT) + ROW_GAP;
     });
     x += columns * (NODE_WIDTH + COLUMN_GAP);
   }

@@ -31,11 +31,16 @@ export const ServiceNode = memo(function ServiceNode({
       <div className="flex items-start gap-2.5">
         <KindIcon kind={service.kind} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium leading-5 text-foreground [overflow-wrap:anywhere]">
+          {/* Two lines at most so card heights stay bounded; the text stays in the DOM, so
+              the accessible name is complete, and `title` shows it on hover. */}
+          <p
+            title={service.name}
+            className="line-clamp-2 text-sm font-medium leading-5 text-foreground [overflow-wrap:anywhere]"
+          >
             {service.name}
           </p>
           <div className="mt-0.5">
-            <ServiceSourceLine service={service} />
+            <ServiceSourceLine service={service} clamp />
           </div>
         </div>
       </div>

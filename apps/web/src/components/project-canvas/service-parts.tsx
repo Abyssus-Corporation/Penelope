@@ -47,14 +47,24 @@ export function KindIcon({ kind, className }: { kind: ServiceKind; className?: s
 }
 
 /** Source on one line; long image names and paths wrap rather than clip. */
-export function ServiceSourceLine({ service }: { service: CanvasService }) {
+export function ServiceSourceLine({
+  service,
+  clamp = false,
+}: {
+  service: CanvasService;
+  /** Canvas cards cap the source at two lines (full text in `title` and in the DOM). */
+  clamp?: boolean;
+}) {
   const c = useI18n().project.canvas;
   const Icon = service.source ? SOURCE_ICONS[service.source.type] : null;
   return (
     <span className="flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
       {Icon && <Icon size={12} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />}
       {service.source ? (
-        <span className="min-w-0 [overflow-wrap:anywhere]">
+        <span
+          title={clamp ? service.source.label : undefined}
+          className={cn("min-w-0 [overflow-wrap:anywhere]", clamp && "line-clamp-2")}
+        >
           <span className="sr-only">{c.sources[service.source.type]}: </span>
           {service.source.label}
         </span>
