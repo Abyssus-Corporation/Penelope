@@ -92,7 +92,7 @@ export function CreateProjectDialog({
           <DialogBody>
             <Field
               label={c.name}
-              description={c.nameHint}
+              description={c.nameHint.replace("{max}", String(PROJECT_NAME_MAX_LENGTH))}
               error={submitted && nameError ? nameMessage[nameError] : undefined}
               required
             >
@@ -104,7 +104,7 @@ export function CreateProjectDialog({
                 placeholder={c.namePlaceholder}
                 autoComplete="off"
                 spellCheck={false}
-                maxLength={PROJECT_NAME_MAX_LENGTH + 16}
+                maxLength={PROJECT_NAME_MAX_LENGTH}
                 className="font-mono"
               />
             </Field>

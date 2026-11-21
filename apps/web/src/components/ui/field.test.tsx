@@ -30,4 +30,24 @@ describe("Field", () => {
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAccessibleDescription("Name is taken");
   });
+
+  it("only references description ids that are rendered", () => {
+    const { rerender } = render(
+      <Field label="Name" description="Lowercase letters only" error="Name is taken">
+        <Input />
+      </Field>,
+    );
+
+    const ids = () => screen.getByLabelText("Name").getAttribute("aria-describedby")!.split(" ");
+    expect(ids()).toHaveLength(1);
+    for (const id of ids()) expect(document.getElementById(id)).toBeInTheDocument();
+
+    rerender(
+      <Field label="Name" description="Lowercase letters only">
+        <Input />
+      </Field>,
+    );
+    expect(ids()).toHaveLength(1);
+    expect(document.getElementById(ids()[0])).toHaveTextContent("Lowercase letters only");
+  });
 });
