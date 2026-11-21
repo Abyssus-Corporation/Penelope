@@ -139,6 +139,53 @@ export const en = {
       },
     },
   },
+  forgotPassword: {
+    title: "Reset your password,",
+    subtitle: "we'll email you a link.",
+    email: "Email",
+    emailPlaceholder: "you@example.com",
+    emailInvalid: "Enter a valid email address.",
+    submit: "Send reset link",
+    submitting: "Sending…",
+    error: "Something went wrong. Try again in a moment.",
+    sentTitle: "Check your email",
+    // Same copy for every address so the page never reveals which accounts exist.
+    sent: "If an account exists for {email}, you'll get a link to reset your password in a few minutes.",
+    sentHint: "Not there? Check your spam folder or try another address.",
+    tryAgain: "Use a different email",
+    backToSignIn: "Back to sign in",
+  },
+  project: {
+    back: "Projects",
+    breadcrumb: "Breadcrumb",
+    loading: "Loading project…",
+    services: "Services",
+    servicesCount: { one: "{n} service", other: "{n} services" },
+    noServices: "No services yet. Services you add to this project show up here.",
+    repository: "Repository",
+    noRepository: "Not connected to a Git repository.",
+    lastCommit: "Last commit",
+    noCommit: "No commits deployed yet.",
+    lastDeploy: "Last deploy",
+    neverDeployed: "Never deployed",
+    providers: { github: "GitHub", gitlab: "GitLab", bitbucket: "Bitbucket" },
+    notFoundTitle: "Project not found",
+    notFound:
+      "There's no project with the ID {id}. It may have been deleted, or the link is wrong.",
+    errorTitle: "Couldn't load this project",
+    error: "Check your connection and try again.",
+    retry: "Try again",
+  },
+  errors: {
+    notFoundTitle: "Page not found",
+    notFound: "The page you're looking for doesn't exist or has moved.",
+    crashTitle: "Something went wrong",
+    crash:
+      "An unexpected error stopped this page from loading. Reload, or go back to your projects.",
+    reload: "Reload page",
+    toDashboard: "Go to projects",
+    toSignIn: "Sign in",
+  },
 } as const;
 
 export type Messages = typeof en;

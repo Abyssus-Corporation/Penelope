@@ -15,6 +15,13 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const PUBLIC_PATHS = ["/login", "/signup"] as const;
 const AUTHED_PATH = "/dashboard";
+// Client-side routes added after #9; the preview server falls back to index.html for each.
+const NEW_SCREENS = [
+  { path: "/projects/acme-production", heading: "acme-production" },
+  { path: "/projects/does-not-exist", heading: "Project not found" },
+  { path: "/forgot-password", heading: "Reset your password, we'll email you a link." },
+  { path: "/this-route-does-not-exist", heading: "Page not found" },
+] as const;
 
 type CspViolation = {
   blockedURI: string;
@@ -85,6 +92,7 @@ test.describe("security headers on the preview server", () => {
     await expectSecurityHeaders("/login");
     await expectSecurityHeaders("/signup");
     await expectSecurityHeaders("/dashboard");
+    for (const { path } of NEW_SCREENS) await expectSecurityHeaders(path);
   });
 
   test("hashed assets are immutable; a missing asset is 404 with no-store", async () => {
@@ -121,6 +129,46 @@ test.describe("pages under the production CSP", () => {
       expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
     });
   }
+
+  for (const { path, heading } of NEW_SCREENS) {
+    test(`${path} renders with no CSP violations and no third-party requests`, async ({ page }) => {
+      const signals = await collectPageSignals(page);
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+      await page.waitForTimeout(250);
+      assertNoSecurityViolations(await signals.readViolations());
+      expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+    });
+  }
+
+  test("forgot password submits without CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page);
+    await page.goto("/forgot-password");
+    await page.getByLabel("Email").fill("audit@example.com");
+    await page.getByRole("button", { name: "Send reset link" }).click();
+    await expect(page.getByRole("heading", { name: "Check your email" })).toBeFocused();
+    await expect(page.getByText("If an account exists for audit@example.com")).toBeVisible();
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
+
+  test("dashboard card opens the project page without CSP violations", async ({ page }) => {
+    const signals = await collectPageSignals(page);
+    await page.goto(AUTHED_PATH);
+    await page.getByRole("link", { name: /^acme-production/ }).click();
+    await expect(page).toHaveURL(/\/projects\/acme-production$/);
+    await expect(page.getByRole("heading", { level: 1, name: "acme-production" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Services" })).toBeVisible();
+    // Same dashboard shell as /dashboard: sidebar with Projects, plus a breadcrumb.
+    await expect(
+      page.getByRole("complementary").getByRole("link", { name: "Projects" }),
+    ).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
+      "acme-production",
+    );
+    assertNoSecurityViolations(await signals.readViolations());
+    expect(signals.thirdParty.map((request) => request.url())).toEqual([]);
+  });
 
   test("login can be filled without CSP violations", async ({ page }) => {
     const signals = await collectPageSignals(page);
