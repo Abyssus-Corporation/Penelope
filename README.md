@@ -61,16 +61,16 @@ The dashboard renders a live-filtered grid of projects. Each card shows:
 - last deployment time
 - linked Git repository and last commit message, when present
 
-Cards are resizable across three density presets (compact, default, expanded). The header search filters projects in real time. A "New project" button is wired into the layout and ready to connect to a creation flow.
+Cards are resizable across three density presets (compact, default, expanded). The header search filters projects in real time. A "New project" button opens a dialog to create a project by name. New projects live in memory until the API exists.
 
 ### Sidebar
 
 A collapsible left-hand navigation with two groups:
 
-| Group   | Links                                                  |
-| ------- | ------------------------------------------------------ |
-| General | Projects, Deployments, Volumes, Templates              |
-| Admin   | Team, Usage, Settings                                  |
+| Group   | Links                                     |
+| ------- | ----------------------------------------- |
+| General | Projects, Deployments, Volumes, Templates |
+| Admin   | Team, Usage, Settings                     |
 
 When collapsed, full labels are replaced by icon-only entries with hover tooltips. The user menu at the bottom exposes a theme switcher (light / dark / system) and a sign-out action.
 
@@ -118,7 +118,8 @@ Longer term, Penelope aims to be a credible self-hosted alternative to Railway, 
 - [ ] Project detail page
 - [ ] Service log viewer
 - [ ] Deployment history timeline
-- [ ] New project / new service creation flows
+- [x] New project creation dialog
+- [ ] New service creation flow
 - [ ] In-app settings pages
 - [ ] Team management UI
 - [ ] Usage and metrics views
@@ -162,7 +163,7 @@ Penelope/
 │       │   └── types/        project.ts
 │       ├── index.html
 │       ├── package.json
-│       ├── tailwind.config.js
+│       ├── tailwind.config.ts
 │       └── vite.config.ts
 │
 │   └── api/                  Axum API
@@ -183,14 +184,14 @@ Penelope/
 
 ## 🧪 Development environment
 
-| Component  | Version          |
-| ---------- | ---------------- |
-| Node.js    | `≥ 20`           |
-| pnpm       | `≥ 9`            |
-| React      | `18.3`           |
-| TypeScript | `5.x`            |
-| Vite       | `5.x`            |
-| Tailwind   | `3.4`            |
+| Component  | Version              |
+| ---------- | -------------------- |
+| Node.js    | `22.22.2+ or 24.15+` |
+| pnpm       | `≥ 10.34`            |
+| React      | `18.3`               |
+| TypeScript | `5.x`                |
+| Vite       | `6.x`                |
+| Tailwind   | `3.4`                |
 
 ### Getting started
 
