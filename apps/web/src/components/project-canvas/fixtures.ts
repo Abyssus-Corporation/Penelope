@@ -35,19 +35,21 @@ const FLEET_KINDS: { prefix: string; kind: ServiceKind; count: number }[] = [
 ];
 const STATUSES: ApiService["status"][] = ["running", "running", "running", "building", "failed"];
 
-const fleetNames = FLEET_KINDS.flatMap(({ prefix, count }) =>
-  Array.from({ length: count }, (_, i) => `${prefix}-${String(i + 1).padStart(2, "0")}`),
-);
-const ofKind = (kind: ServiceKind) =>
-  fleetNames.filter((name) => FLEET_KINDS.find((k) => name.startsWith(k.prefix))?.kind === kind);
+/** `scale` 1: 35 services ("fleet"); 2: 70 ("fleet-xl", the big-graph fit case). */
+const fleetNames = (scale: number) =>
+  FLEET_KINDS.flatMap(({ prefix, count }) =>
+    Array.from({ length: count * scale }, (_, i) => `${prefix}-${String(i + 1).padStart(2, "0")}`),
+  );
+const kindOf = (name: string) => FLEET_KINDS.find((k) => name.startsWith(k.prefix))!.kind;
 
-function fleetDetails(): Record<string, ServiceDetails> {
+function fleetDetails(names: string[]): Record<string, ServiceDetails> {
+  const ofKind = (kind: ServiceKind) => names.filter((name) => kindOf(name) === kind);
   const apis = ofKind("service");
   const dbs = ofKind("database");
   const caches = ofKind("cache");
   const out: Record<string, ServiceDetails> = {};
-  fleetNames.forEach((name, i) => {
-    const kind = FLEET_KINDS.find((k) => name.startsWith(k.prefix))!.kind;
+  names.forEach((name, i) => {
+    const kind = kindOf(name);
     const refs =
       kind === "web"
         ? [apis[i % apis.length]!, apis[(i + 3) % apis.length]!]
@@ -67,14 +69,17 @@ function fleetDetails(): Record<string, ServiceDetails> {
   return out;
 }
 
+const fleetProject = (id: string, names: string[]): ApiProject => ({
+  id,
+  name: id,
+  services: names.map((name, i) => ({ name, status: STATUSES[i % STATUSES.length]! })),
+  deployedAt: minutesAgo(5),
+  repo: { provider: "github", owner: "fleet", name: "platform" },
+});
+
 export const CANVAS_FIXTURE_PROJECTS: ApiProject[] = [
-  {
-    id: "fleet",
-    name: "fleet",
-    services: fleetNames.map((name, i) => ({ name, status: STATUSES[i % STATUSES.length]! })),
-    deployedAt: minutesAgo(5),
-    repo: { provider: "github", owner: "fleet", name: "platform" },
-  },
+  fleetProject("fleet", fleetNames(1)),
+  fleetProject("fleet-xl", fleetNames(2)),
   {
     id: "loop",
     name: "loop",
@@ -145,7 +150,8 @@ export const SERVICE_DETAILS: Record<string, Record<string, ServiceDetails>> = {
       null,
     ),
   },
-  fleet: fleetDetails(),
+  fleet: fleetDetails(fleetNames(1)),
+  "fleet-xl": fleetDetails(fleetNames(2)),
   loop: {
     orders: detail("service", repo("loop/orders"), 42, ["inventory", "billing"]),
     inventory: detail("service", repo("loop/inventory"), 50, ["orders"]),
