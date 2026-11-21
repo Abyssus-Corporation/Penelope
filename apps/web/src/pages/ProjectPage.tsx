@@ -1,13 +1,20 @@
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ChevronRight, GitBranch } from "lucide-react";
 import { api, ApiUnavailableError, type ApiProject } from "@/api";
 import { AppShell } from "@/components/layout/AppShell";
-import { ProjectCanvasView } from "@/components/project-canvas/ProjectCanvasView";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { formatRelativeTime, plural } from "@/i18n/format";
+
+// The canvas/list view (graph, storage, domains, Radix menus) is its own chunk, so the
+// entry bundle stays under 500 kB. Its download starts with the project request, so the
+// two load in parallel rather than one after the other.
+const loadCanvasView = () => import("@/components/project-canvas/ProjectCanvasView");
+const ProjectCanvasView = lazy(() =>
+  loadCanvasView().then((module) => ({ default: module.ProjectCanvasView })),
+);
 
 type State =
   | { status: "loading" }
@@ -24,6 +31,7 @@ function useProject(id: string) {
   useEffect(() => {
     let active = true;
     setState({ status: "loading" });
+    void loadCanvasView();
     api.projects.get(id).then(
       (project) =>
         active && setState(project ? { status: "ready", project } : { status: "not-found" }),
@@ -84,11 +92,19 @@ export function ProjectPage() {
       {state.status === "ready" ? (
         // Fill the content area below AppShell's h-14 header; the canvas takes what's left.
         <div className="flex min-h-[calc(100dvh-theme(spacing.14))] flex-col">
-          <ProjectCanvasView
-            key={state.project.id}
-            project={state.project}
-            header={<ProjectHeader project={state.project} />}
-          />
+          <Suspense
+            fallback={
+              <div className="px-4 pb-4 pt-6 sm:px-6 sm:pt-8">
+                <ProjectHeader project={state.project} />
+              </div>
+            }
+          >
+            <ProjectCanvasView
+              key={state.project.id}
+              project={state.project}
+              header={<ProjectHeader project={state.project} />}
+            />
+          </Suspense>
         </div>
       ) : (
         <div

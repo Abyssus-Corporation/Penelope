@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { LayoutGrid, LayoutList, Plus, Search, Columns2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,10 +7,41 @@ import { formatNumber } from "@/i18n/format";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
-import { PROJECTS } from "@/lib/mock-data";
 import type { Project } from "@/types/project";
 
 type CardSize = "sm" | "md" | "lg";
+
+// shortcut: mock projects until GET /projects exists; swap in the API client then.
+// Same gating as api/index.ts: `import.meta.env.DEV` is statically false in production
+// builds, so this import and the mock data behind it are dropped from dist.
+const mockProjects: Promise<Project[]> | null = import.meta.env.DEV
+  ? import("@/lib/mock-data").then((module) => module.PROJECTS)
+  : null;
+
+type Load = { status: "loading" } | { status: "unavailable" } | { status: "ready" };
+
+/** Projects for the dashboard. New ones live in memory only. */
+function useProjects() {
+  const [load, setLoad] = useState<Load>(() =>
+    mockProjects ? { status: "loading" } : { status: "unavailable" },
+  );
+  const [projects, setProjects] = useState<Project[]>([]);
+  useEffect(() => {
+    let active = true;
+    mockProjects?.then(
+      (list) => {
+        if (!active) return;
+        setProjects(list);
+        setLoad({ status: "ready" });
+      },
+      () => active && setLoad({ status: "unavailable" }),
+    );
+    return () => {
+      active = false;
+    };
+  }, []);
+  return [load.status, projects, setProjects] as const;
+}
 
 // Columns follow the space the grid actually has (the sidebar eats into the viewport),
 // so cards never shrink below a readable width.
@@ -25,8 +56,8 @@ export function DashboardPage() {
   const d = t.dashboard;
   const [size, setSize] = useState<CardSize>("md");
   const [search, setSearch] = useState("");
-  // Seeded from mock data until the API exists; new projects live in memory only.
-  const [projects, setProjects] = useState<Project[]>(PROJECTS);
+  const [status, projects, setProjects] = useProjects();
+  const ready = status === "ready";
 
   const filtered = projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -58,17 +89,24 @@ export function DashboardPage() {
           <div className="mr-auto flex h-14 min-w-0 items-center">
             <div className="flex items-baseline gap-2">
               <h1 className="text-[14px] font-semibold text-foreground">{d.projects.title}</h1>
-              <span className="text-[12px] tabular-nums text-muted-foreground">
-                {formatNumber(t.locale, filtered.length)}
-              </span>
+              {ready && (
+                <span className="text-[12px] tabular-nums text-muted-foreground">
+                  {formatNumber(t.locale, filtered.length)}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Below lg "New project" sits on the first row, so it comes first in the DOM too. */}
-          {newProject("flex lg:hidden")}
+          {ready && newProject("flex lg:hidden")}
 
           {/* Search + size toggle: full-width second row below lg */}
-          <div className="order-last flex w-full items-center gap-2 pb-3 lg:order-none lg:w-auto lg:pb-0">
+          <div
+            className={cn(
+              "order-last flex w-full items-center gap-2 pb-3 lg:order-none lg:w-auto lg:pb-0",
+              !ready && "hidden",
+            )}
+          >
             {/* Search */}
             <div className="relative flex min-w-0 flex-1 items-center lg:flex-none">
               <Search
@@ -117,12 +155,25 @@ export function DashboardPage() {
             </ToggleGroup.Root>
           </div>
 
-          {newProject("hidden lg:flex")}
+          {ready && newProject("hidden lg:flex")}
         </div>
       }
     >
       <div className="px-4 py-5 sm:px-6">
-        {filtered.length === 0 ? (
+        {status === "loading" ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            {d.projects.loading}
+          </p>
+        ) : status === "unavailable" ? (
+          <div className="flex min-h-[calc(100dvh-theme(spacing.14)-theme(spacing.10))] items-center justify-center">
+            <div className="max-w-md text-center">
+              <h2 className="font-display text-2xl font-light tracking-tight text-foreground">
+                {d.projects.unavailableTitle}
+              </h2>
+              <p className="mt-3 text-[15px] text-muted-foreground">{d.projects.unavailable}</p>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border">
             <p className="text-sm text-muted-foreground">
               {search ? `${d.projects.noResults} "${search}"` : d.projects.empty}
