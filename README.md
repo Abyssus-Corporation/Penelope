@@ -208,9 +208,9 @@ pnpm format           # Prettier across apps/**
 The API is a Rust workspace member (`cargo run -p api`). Copy `.env.example` to `.env` first (that file is gitignored).
 
 ```bash
-cp .env.example .env
-docker compose up -d db          # Postgres 16
-cargo run -p api                 # listen on BIND_ADDRESS (default 0.0.0.0:3000)
+cp .env.example .env             # required: compose reads POSTGRES_PASSWORD from .env
+docker compose up -d db          # Postgres 16, bound to 127.0.0.1
+cargo run -p api                 # listen on BIND_ADDRESS (default 127.0.0.1:3000)
 # GET /healthz  — liveness (no database)
 # GET /readyz   — readiness (checks Postgres)
 ```

@@ -1,5 +1,6 @@
 use anyhow::Context;
 use api::{config::Config, db, state::AppState};
+use secrecy::ExposeSecret;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -12,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = Config::from_env().context("failed to load configuration")?;
-    let pool = db::connect_pool(&config.database_url)
+    let pool = db::connect_pool(config.database_url.expose_secret())
         .await
         .context("failed to connect to postgres")?;
     db::run_migrations(&pool)

@@ -2,14 +2,6 @@ use axum::{extract::Request, middleware::Next, response::Response};
 
 use crate::error::AppError;
 
-/// Paths that skip authentication. Everything else is denied by default.
-const PUBLIC_PATHS: &[&str] = &["/healthz", "/readyz"];
-
-fn is_public(path: &str) -> bool {
-    let path = path.trim_end_matches('/');
-    PUBLIC_PATHS.contains(&path)
-}
-
 /// Hook for the future session or token authenticator.
 ///
 /// Today this always returns [`AppError::Unauthorized`]. When real
@@ -19,12 +11,14 @@ fn authenticate(_request: &Request) -> Result<(), AppError> {
     Err(AppError::Unauthorized)
 }
 
-/// Deny-by-default layer: public paths pass through; every other request
-/// must pass [`authenticate`] or receive 401.
-pub async fn deny_by_default(request: Request, next: Next) -> Result<Response, AppError> {
-    if is_public(request.uri().path()) {
-        return Ok(next.run(request).await);
-    }
+/// Route layer applied only to the protected router. Public routes never
+/// pass through this function; there is no path-string allowlist.
+pub async fn require_auth(request: Request, next: Next) -> Result<Response, AppError> {
     authenticate(&request)?;
     Ok(next.run(request).await)
+}
+
+/// Fallback for unmatched routes: 401, so the API surface is not leaked.
+pub async fn unauthorized() -> AppError {
+    AppError::Unauthorized
 }
