@@ -13,8 +13,6 @@ updates:
       npm-minor-patch:
         update-types: [minor, patch]
 
-  # No Cargo.toml yet: Dependabot reports "dependency file not found" for this
-  # entry until the Rust workspace lands, then starts working on its own.
   - package-ecosystem: cargo
     directory: /
     schedule:
@@ -38,4 +36,16 @@ updates:
       prefix: ci(deps)
     groups:
       actions-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build(deps)
+    groups:
+      compose-minor-patch:
         update-types: [minor, patch]

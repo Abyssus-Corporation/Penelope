@@ -1,5 +1,6 @@
 use anyhow::Context;
 use api::{config::Config, db, state::AppState};
+use axum::{body::Body, http::Request};
 use secrecy::ExposeSecret;
 use tracing_subscriber::EnvFilter;
 
@@ -25,8 +26,11 @@ async fn main() -> anyhow::Result<()> {
         .with_context(|| format!("failed to bind {}", config.bind_address))?;
 
     tracing::info!(addr = %config.bind_address, "api listening");
-    axum::serve(listener, api::app(AppState { pool }))
-        .await
-        .context("server error")?;
+    axum::serve(
+        listener,
+        axum::ServiceExt::<Request<Body>>::into_make_service(api::app(AppState { pool })),
+    )
+    .await
+    .context("server error")?;
     Ok(())
 }
