@@ -1,11 +1,24 @@
 import { isRouteErrorResponse, Link, useRouteError } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/layout/PageShell";
+import { SkipLink } from "@/components/layout/RootLayout";
 import { useI18n } from "@/i18n";
 import { NotFoundPage } from "./NotFoundPage";
 
-/** Router errorElement. Shows no error details: they can leak internals. */
+/**
+ * Router errorElement. It replaces RootLayout, so it renders the skip link itself.
+ * Shows no error details: they can leak internals.
+ */
 export function ErrorPage() {
+  return (
+    <>
+      <SkipLink />
+      <ErrorContent />
+    </>
+  );
+}
+
+function ErrorContent() {
   const error = useRouteError();
   const { errors: e } = useI18n();
 

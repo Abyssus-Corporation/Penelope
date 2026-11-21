@@ -22,6 +22,7 @@ describe("routes", () => {
       "/dashboard",
     );
     expect(screen.queryByText(/no-such-page/)).toBeNull();
+    expect(screen.getAllByRole("link", { name: "Skip to main content" })).toHaveLength(1);
   });
 
   it("renders the error page without error details when a route throws", () => {
@@ -36,6 +37,8 @@ describe("routes", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Something went wrong" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Reload page" })).toBeVisible();
     expect(screen.queryByText(/secret stack detail/)).toBeNull();
+    // The errorElement replaces RootLayout, so it brings its own (single) skip link.
+    expect(screen.getAllByRole("link", { name: "Skip to main content" })).toHaveLength(1);
     window.removeEventListener("error", silence);
     vi.mocked(console.error).mockRestore();
   });
