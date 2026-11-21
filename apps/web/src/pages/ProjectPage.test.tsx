@@ -1,12 +1,21 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { api, type ApiProject } from "@/api";
+import { api, ApiUnavailableError, type ApiProject } from "@/api";
 import { I18nProvider } from "@/i18n";
 import { routes } from "@/routes";
 
-vi.mock("@/api", () => ({ api: { projects: { get: vi.fn() } } }));
+vi.mock("@/api", async (importActual) => ({
+  ApiUnavailableError: (await importActual<typeof import("@/api")>()).ApiUnavailableError,
+  api: { projects: { get: vi.fn() } },
+}));
+// React Flow measures nodes; jsdom has no ResizeObserver.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
 const getProject = vi.mocked(api.projects.get);
 
 function renderAt(path: string) {
@@ -39,9 +48,15 @@ describe("ProjectPage", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "acme" })).toBeVisible();
     expect(getProject).toHaveBeenCalledWith("acme");
     expect(screen.getByText("2 services")).toBeVisible();
-    expect(screen.getByText("Failed")).toBeVisible();
-    expect(screen.getByText("acme/app")).toBeVisible();
-    expect(screen.getByText("No commits deployed yet.")).toBeVisible();
+    expect(screen.getByText(/GitHub · acme\/app/)).toBeVisible();
+    // Wide screens start on the canvas; both services are focusable nodes there.
+    const canvas = await screen.findByRole("region", { name: "Service canvas" }, { timeout: 5000 });
+    expect(canvas).toHaveAccessibleDescription(/Enter opens a service/);
+    await waitFor(() =>
+      expect(canvas.querySelector('.react-flow__node[data-id="worker"]')).toHaveTextContent(
+        /^worker.*No source connected.*Failed.*No deploys yet.*Service, No connections$/,
+      ),
+    );
     // Rendered inside the dashboard shell: sidebar nav plus a breadcrumb back to Projects.
     expect(screen.getByRole("complementary")).toBeInTheDocument();
     const breadcrumb = screen.getByRole("navigation", { name: "Breadcrumb" });
@@ -56,7 +71,9 @@ describe("ProjectPage", () => {
     expect(await screen.findByText(/No services yet/)).toBeVisible();
     expect(screen.getByText("0 services")).toBeVisible();
     expect(screen.getByText("Never deployed")).toBeVisible();
-    expect(screen.getByText("Not connected to a Git repository.")).toBeVisible();
+    // Nothing to switch between, and no canvas to load.
+    expect(screen.queryByRole("group", { name: "View" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Service canvas" })).not.toBeInTheDocument();
   });
 
   it("shows not found for an unknown id without echoing it", async () => {
@@ -84,5 +101,19 @@ describe("ProjectPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { level: 1, name: "acme" })).toBeVisible();
     expect(getProject).toHaveBeenCalledTimes(2);
+  });
+
+  it("explains when no API is connected (production without a backend)", async () => {
+    getProject.mockRejectedValueOnce(new ApiUnavailableError());
+    renderAt("/projects/acme");
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Project data isn't available" }),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to projects" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
   });
 });
