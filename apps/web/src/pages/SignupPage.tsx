@@ -215,7 +215,8 @@ export function SignupPage() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
       <header className="border-b border-border">
-        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-5 sm:px-8">
+        {/* Stacked below sm so the wordmark and the sign-in prompt never collide at 320px. */}
+        <div className="mx-auto flex min-h-16 w-full max-w-[1200px] flex-col justify-center gap-1 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-8 sm:py-0">
           <span className="text-[15px] font-medium tracking-tight text-foreground">
             {t.brand.name}
           </span>
@@ -223,7 +224,7 @@ export function SignupPage() {
             {s.hasAccount}{" "}
             <Link
               to="/login"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
+              className="whitespace-nowrap font-medium text-foreground underline-offset-4 hover:underline"
             >
               {s.signIn}
             </Link>
