@@ -23,8 +23,7 @@ jobs:
     # actions: read is only needed for private repos; this repo is public.
     permissions:
       contents: read
-      # Required to upload CodeQL results (SARIF) to code scanning.
-      security-events: write
+      security-events: write # upload CodeQL results (SARIF) to code scanning
     strategy:
       fail-fast: false
       matrix:
