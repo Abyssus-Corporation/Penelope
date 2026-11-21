@@ -28,24 +28,28 @@ function fontLicensesPlugin(): Plugin {
   };
 }
 
+// Static file trees that must 404 when a file is missing, never fall back to index.html.
+const NO_FALLBACK_DIRS = ["assets", "fonts"];
+
 function previewSecurityPlugin() {
   return {
     name: "penelope-preview-security-headers",
     configurePreviewServer(server: PreviewServer) {
       // Run before Vite's preview middleware. Cache-Control is applied at
       // writeHead so a missing /assets/* file gets no-store (not immutable).
-      // Hashed assets must 404 when missing; Vite's SPA fallback would
-      // otherwise serve index.html as 200.
+      // Hashed assets and font licenses must 404 when missing; Vite's SPA
+      // fallback would otherwise serve index.html as 200.
       const dist = path.resolve(server.config.root, server.config.build.outDir);
       server.middlewares.use((req, res, next) => {
         const pathname = (req.url ?? "/").split("?")[0] ?? "/";
         for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
           res.setHeader(name, value);
         }
-        if (pathname.startsWith("/assets/")) {
-          const assetsDir = path.join(dist, "assets");
-          const file = path.resolve(assetsDir, path.relative("/assets", pathname));
-          if (!file.startsWith(assetsDir + path.sep) || !existsSync(file)) {
+        const dir = NO_FALLBACK_DIRS.find((name) => pathname.startsWith(`/${name}/`));
+        if (dir) {
+          const dirPath = path.join(dist, dir);
+          const file = path.resolve(dirPath, path.relative(`/${dir}`, pathname));
+          if (!file.startsWith(dirPath + path.sep) || !existsSync(file)) {
             res.statusCode = 404;
             res.setHeader("Cache-Control", cacheControlForPath(pathname, 404));
             res.end("Not found");
