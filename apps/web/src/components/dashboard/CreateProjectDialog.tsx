@@ -15,12 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  PROJECT_NAME_MAX_LENGTH,
-  createProject,
-  parseRepository,
-  validateProjectName,
-} from "@/lib/projects";
+import { PROJECT_NAME_MAX_LENGTH, createProject, validateProjectName } from "@/lib/projects";
 import type { Project } from "@/types/project";
 
 interface CreateProjectDialogProps {
@@ -40,16 +35,13 @@ export function CreateProjectDialog({
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [repository, setRepository] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
-  const repoRef = useRef<HTMLInputElement>(null);
 
   const nameError = validateProjectName(
     name,
     existingProjects.map((p) => p.name),
   );
-  const repoInvalid = repository.trim() !== "" && parseRepository(repository) === null;
 
   const nameMessage = {
     required: c.errors.nameRequired,
@@ -62,7 +54,6 @@ export function CreateProjectDialog({
     setOpen(next);
     if (!next) {
       setName("");
-      setRepository("");
       setSubmitted(false);
     }
   }
@@ -71,11 +62,9 @@ export function CreateProjectDialog({
     event.preventDefault();
     setSubmitted(true);
     if (nameError) return nameRef.current?.focus();
-    if (repoInvalid) return repoRef.current?.focus();
 
     const project = createProject({
       name,
-      repository,
       deployedAt: c.justCreated,
       existingIds: existingProjects.map((p) => p.id),
     });
@@ -116,25 +105,6 @@ export function CreateProjectDialog({
                 autoComplete="off"
                 spellCheck={false}
                 maxLength={PROJECT_NAME_MAX_LENGTH + 16}
-                className="font-mono"
-              />
-            </Field>
-
-            <Field
-              label={c.repository}
-              description={c.repositoryHint}
-              optionalLabel={c.optional}
-              error={submitted && repoInvalid ? c.errors.repositoryInvalid : undefined}
-            >
-              <Input
-                ref={repoRef}
-                size="sm"
-                value={repository}
-                onChange={(e) => setRepository(e.target.value)}
-                placeholder={c.repositoryPlaceholder}
-                autoComplete="off"
-                spellCheck={false}
-                inputMode="url"
                 className="font-mono"
               />
             </Field>
