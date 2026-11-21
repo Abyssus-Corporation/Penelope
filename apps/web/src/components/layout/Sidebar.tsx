@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Tooltip from "@radix-ui/react-tooltip";
@@ -188,6 +189,8 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
   const t = useI18n();
   const nav = t.dashboard.nav;
   const { theme, setTheme } = useTheme();
+  // Controlled so Escape on an open theme tooltip closes the whole menu, not just the tooltip.
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const initials = MOCK_USER.name
     .split(" ")
@@ -198,7 +201,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
 
   return (
     <div className="border-t border-border px-2 py-2">
-      <DropdownMenu.Root modal={false}>
+      <DropdownMenu.Root modal={false} open={menuOpen} onOpenChange={setMenuOpen}>
         <NavTooltip label={MOCK_USER.name} enabled={collapsed}>
           <DropdownMenu.Trigger asChild>
             <button
@@ -287,6 +290,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
                   <Tooltip.Portal>
                     <Tooltip.Content
                       sideOffset={6}
+                      onEscapeKeyDown={() => setMenuOpen(false)}
                       className="z-[60] animate-fade-in rounded bg-foreground px-2 py-1 text-[11px] text-background shadow"
                     >
                       {nav[labelKey]}
