@@ -43,6 +43,7 @@
     --success: 133 54% 28%; /* 4.8:1 on its 10% tint */
     --success-foreground: 0 0% 98%;
     --radius: 6px;
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* iOS-like sheet curve */
   }
 
   .dark {

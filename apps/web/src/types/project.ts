@@ -22,6 +22,7 @@ export interface Project {
   id: string;
   name: string;
   services: Service[];
+  /** ISO 8601 timestamp of the last deployment. */
   deployedAt: string;
   repo?: ProjectRepo;
 }
