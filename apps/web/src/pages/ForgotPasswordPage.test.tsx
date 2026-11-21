@@ -43,7 +43,9 @@ describe("ForgotPasswordPage", () => {
       expect(screen.queryByRole("heading", { name: "Check your email" })).toBeNull();
 
       await act(() => vi.advanceTimersByTimeAsync(200));
-      expect(screen.getByRole("heading", { name: "Check your email" })).toHaveFocus();
+      // One h1, now naming the new state, and focused so it is announced.
+      expect(screen.getByRole("heading", { level: 1, name: "Check your email" })).toHaveFocus();
+      expect(screen.getAllByRole("heading")).toHaveLength(1);
       messages.push(
         screen.getByText(/If an account exists/).textContent!.replace(email, "{email}"),
       );
@@ -66,12 +68,40 @@ describe("ForgotPasswordPage", () => {
     expect(screen.queryByText(/503/)).toBeNull();
   });
 
-  it("validates the address before sending", async () => {
-    renderPage();
-    submit("not-an-email");
+  it.each(["not-an-email", "ada@", "ada@acme", "ada lovelace@acme.com", "@acme.com"])(
+    "rejects %s before sending",
+    (email) => {
+      renderPage();
+      submit(email);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Enter a valid email address.");
-    expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true");
-    expect(requestPasswordReset).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent("Enter a valid email address.");
+      expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true");
+      expect(requestPasswordReset).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["用户@example.com", "josé@exämple.com", "ada@例子.广告"])(
+    "accepts the internationalised address %s",
+    async (email) => {
+      requestPasswordReset.mockResolvedValueOnce(undefined);
+      renderPage();
+      expect(screen.getByLabelText("Email")).toHaveAttribute("inputmode", "email");
+      submit(email);
+      await act(() => vi.advanceTimersByTimeAsync(1300));
+
+      expect(requestPasswordReset).toHaveBeenCalledWith(email);
+      expect(screen.getByText(/If an account exists/)).toHaveTextContent(email);
+    },
+  );
+
+  it("renders replacement patterns in the address literally", async () => {
+    requestPasswordReset.mockResolvedValueOnce(undefined);
+    renderPage();
+    submit("a$&b$'c@example.com");
+    await act(() => vi.advanceTimersByTimeAsync(1300));
+
+    expect(screen.getByText(/If an account exists/)).toHaveTextContent(
+      "If an account exists for a$&b$'c@example.com, you'll get a link",
+    );
   });
 });

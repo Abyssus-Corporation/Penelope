@@ -157,6 +157,29 @@ async function assertMissingAsset(origin: string, kind: "preview" | "caddy") {
   expectEq(header(response, "X-Content-Type-Options"), "nosniff", `${kind} missing asset nosniff`);
 }
 
+const FONT_LICENSES = ["Inter-OFL.txt", "Newsreader-OFL.txt", "ObelMono-OFL.txt"];
+
+async function assertFonts(origin: string, kind: "preview" | "caddy") {
+  for (const name of FONT_LICENSES) {
+    const response = await fetchOrFail(new URL(`/fonts/${name}`, origin).href);
+    if (response.status !== 200)
+      fail(`${kind} /fonts/${name}: expected 200, got ${response.status}`);
+    if (!/^text\/plain/.test(header(response, "Content-Type") ?? "")) {
+      fail(`${kind} /fonts/${name}: expected text/plain, got ${header(response, "Content-Type")}`);
+    }
+    if (!(await response.text()).includes("SIL OPEN FONT LICENSE")) {
+      fail(`${kind} /fonts/${name} is not the OFL text`);
+    }
+  }
+
+  const missing = await fetchOrFail(new URL("/fonts/x.woff2", origin).href);
+  if (missing.status !== 404) fail(`${kind} missing font: expected 404, got ${missing.status}`);
+  if (/<div id="root">/i.test(await missing.text())) {
+    fail(`${kind} missing font returned index.html instead of 404`);
+  }
+  expectEq(header(missing, "Cache-Control"), CACHE_CONTROL_ERROR, `${kind} missing font cache`);
+}
+
 async function comparePreviewToCaddy() {
   const preview = await fetchOrFail(new URL("/login", previewOrigin).href);
   const caddy = await fetchOrFail(new URL("/login", caddyOrigin).href);
@@ -215,6 +238,8 @@ async function main() {
   await assertAsset(caddyOrigin, assetPath, "caddy");
   await assertMissingAsset(previewOrigin, "preview");
   await assertMissingAsset(caddyOrigin, "caddy");
+  await assertFonts(previewOrigin, "preview");
+  await assertFonts(caddyOrigin, "caddy");
   await comparePreviewToCaddy();
 
   console.log("header smoke passed (preview and Caddy match security-headers.ts)");

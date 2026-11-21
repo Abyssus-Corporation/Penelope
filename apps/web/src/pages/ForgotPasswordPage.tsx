@@ -15,6 +15,12 @@ const MIN_RESPONSE_MS = 1200;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * One @, no spaces, a dot in the domain. Unicode is allowed on both sides
+ * (用户@例子.广告), which the browser's type="email" check rejects.
+ */
+const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/u;
+
 type Status = "idle" | "sending" | "sent" | "error";
 
 export function ForgotPasswordPage() {
@@ -22,17 +28,18 @@ export function ForgotPasswordPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [email, setEmail] = useState("");
   const [invalid, setInvalid] = useState(false);
-  const sentHeading = useRef<HTMLHeadingElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (status === "sent") sentHeading.current?.focus();
+    // The h1 changes to "Check your email"; focusing it announces the new state.
+    if (status === "sent") heading.current?.focus();
   }, [status]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (status === "sending") return;
-    if (!input.current?.checkValidity()) {
+    if (!EMAIL.test(email.trim())) {
       setInvalid(true);
       input.current?.focus();
       return;
@@ -59,22 +66,26 @@ export function ForgotPasswordPage() {
   return (
     <PageShell>
       <div className="m-auto w-full max-w-sm">
-        <h1 className="text-balance font-display text-[2.25rem] font-light leading-[1.07] tracking-[-0.045em] sm:text-[2.6rem]">
-          <span className="block text-foreground">{f.title}</span>
-          <span className="block text-muted-foreground">{f.subtitle}</span>
+        <h1
+          ref={heading}
+          tabIndex={-1}
+          className="text-balance font-display text-[2.25rem] font-light leading-[1.07] tracking-[-0.045em] focus:outline-none sm:text-[2.6rem]"
+        >
+          {status === "sent" ? (
+            <span className="block text-foreground">{f.sentTitle}</span>
+          ) : (
+            <>
+              <span className="block text-foreground">{f.title}</span>
+              <span className="block text-muted-foreground">{f.subtitle}</span>
+            </>
+          )}
         </h1>
 
         {status === "sent" ? (
           <div className="mt-10 space-y-4">
-            <h2
-              ref={sentHeading}
-              tabIndex={-1}
-              className="text-lg font-medium text-foreground focus:outline-none"
-            >
-              {f.sentTitle}
-            </h2>
             <p className="break-words text-[15px] text-foreground">
-              {f.sent.replace("{email}", email.trim())}
+              {/* A function replacer, so "$&" and friends in the address render literally. */}
+              {f.sent.replace("{email}", () => email.trim())}
             </p>
             <p className="text-sm text-muted-foreground">{f.sentHint}</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3 pt-2">
@@ -94,7 +105,9 @@ export function ForgotPasswordPage() {
             <Field label={f.email} required error={invalid ? f.emailInvalid : undefined}>
               <Input
                 ref={input}
-                type="email"
+                // Not type="email": it rejects internationalised addresses. Same keyboard and autofill.
+                type="text"
+                inputMode="email"
                 name="email"
                 autoComplete="email"
                 autoCapitalize="none"

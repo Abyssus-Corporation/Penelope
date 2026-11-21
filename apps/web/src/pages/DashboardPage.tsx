@@ -1,22 +1,10 @@
 import { useState } from "react";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
-import {
-  LayoutGrid,
-  LayoutList,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-  Search,
-  Columns2,
-  X,
-} from "lucide-react";
+import { LayoutGrid, LayoutList, Plus, Search, Columns2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { formatNumber } from "@/i18n/format";
-import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { AppShell } from "@/components/layout/AppShell";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
 import { PROJECTS } from "@/lib/mock-data";
@@ -32,53 +20,9 @@ const GRID_COLS: Record<CardSize, string> = {
   lg: "grid-cols-cards-lg",
 };
 
-const ICON_BUTTON =
-  "flex size-7 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1";
-
-/** Below `md` the sidebar leaves the layout and opens as a modal drawer instead. */
-function MobileNav({
-  label,
-  title,
-  closeLabel,
-}: {
-  label: string;
-  title: string;
-  closeLabel: string;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogPrimitive.Trigger className={cn(ICON_BUTTON, "md:hidden")} aria-label={label}>
-        <Menu size={15} strokeWidth={1.5} aria-hidden="true" />
-      </DialogPrimitive.Trigger>
-      <DialogPortal>
-        <DialogOverlay />
-        <DialogPrimitive.Content
-          aria-describedby={undefined}
-          // Radix makes the page outside inert but doesn't set aria-modal itself.
-          aria-modal="true"
-          onClick={(e) => (e.target as HTMLElement).closest("a") && setOpen(false)}
-          className="fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-background shadow-xl focus:outline-none data-[state=closed]:animate-drawer-out data-[state=open]:animate-drawer-in"
-        >
-          <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
-          {/* Sits on the overlay beside the panel, so it never covers sidebar controls. */}
-          <DialogPrimitive.Close
-            aria-label={closeLabel}
-            className="absolute -right-10 top-3 flex size-8 items-center justify-center rounded bg-background text-foreground shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <X size={15} strokeWidth={1.5} aria-hidden="true" />
-          </DialogPrimitive.Close>
-          <Sidebar collapsed={false} className="w-full" />
-        </DialogPrimitive.Content>
-      </DialogPortal>
-    </Dialog>
-  );
-}
-
 export function DashboardPage() {
   const t = useI18n();
   const d = t.dashboard;
-  const [collapsed, setCollapsed] = useState(false);
   const [size, setSize] = useState<CardSize>("md");
   const [search, setSearch] = useState("");
   // Seeded from mock data until the API exists; new projects live in memory only.
@@ -107,35 +51,11 @@ export function DashboardPage() {
   );
 
   return (
-    <div className="flex h-dvh bg-background">
-      <Sidebar collapsed={collapsed} className="hidden md:flex" />
-
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="flex flex-1 flex-col overflow-hidden outline-none"
-      >
-        {/* Header */}
-        {/* Below lg the tools drop to a second row so "New project" always stays on screen. */}
-        <header className="flex shrink-0 flex-wrap items-center gap-x-3 border-b border-border px-4 lg:flex-nowrap">
-          {/* Left: menu or collapse + title */}
-          <div className="mr-auto flex h-14 min-w-0 items-center gap-3">
-            <MobileNav
-              label={d.nav.openNavigation}
-              title={d.nav.navigation}
-              closeLabel={d.nav.closeNavigation}
-            />
-            <button
-              onClick={() => setCollapsed((c) => !c)}
-              className={cn(ICON_BUTTON, "hidden md:flex")}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <PanelLeftOpen size={15} strokeWidth={1.5} />
-              ) : (
-                <PanelLeftClose size={15} strokeWidth={1.5} />
-              )}
-            </button>
+    <AppShell
+      header={
+        // Below lg the tools drop to a second row so "New project" always stays on screen.
+        <div className="flex w-full flex-wrap items-center gap-x-3 lg:flex-nowrap">
+          <div className="mr-auto flex h-14 min-w-0 items-center">
             <div className="flex items-baseline gap-2">
               <h1 className="text-[14px] font-semibold text-foreground">{d.projects.title}</h1>
               <span className="text-[12px] tabular-nums text-muted-foreground">
@@ -198,25 +118,24 @@ export function DashboardPage() {
           </div>
 
           {newProject("hidden lg:flex")}
-        </header>
-
-        {/* Projects grid */}
-        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-          {filtered.length === 0 ? (
-            <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">
-                {search ? `${d.projects.noResults} "${search}"` : d.projects.empty}
-              </p>
-            </div>
-          ) : (
-            <div className={cn("grid gap-3", GRID_COLS[size])}>
-              {filtered.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
-          )}
         </div>
-      </main>
-    </div>
+      }
+    >
+      <div className="px-4 py-5 sm:px-6">
+        {filtered.length === 0 ? (
+          <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border">
+            <p className="text-sm text-muted-foreground">
+              {search ? `${d.projects.noResults} "${search}"` : d.projects.empty}
+            </p>
+          </div>
+        ) : (
+          <div className={cn("grid gap-3", GRID_COLS[size])}>
+            {filtered.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </div>
+        )}
+      </div>
+    </AppShell>
   );
 }

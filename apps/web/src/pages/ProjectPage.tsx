@@ -114,9 +114,14 @@ export function ProjectPage() {
           <div className="m-auto w-full max-w-md text-center">
             <h1 className={H1}>{p.errorTitle}</h1>
             <p className="mt-3 text-[15px] text-muted-foreground">{p.error}</p>
-            <Button type="button" className="mt-6" onClick={retry}>
-              {p.retry}
-            </Button>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Button type="button" onClick={retry}>
+                {p.retry}
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/dashboard">{p.backToProjects}</Link>
+              </Button>
+            </div>
           </div>
         )}
 
@@ -125,6 +130,9 @@ export function ProjectPage() {
             <h1 className={H1}>{p.notFoundTitle}</h1>
             {/* Never echo the URL id: it is attacker-controlled text (content spoofing). */}
             <p className="mt-3 text-[15px] text-muted-foreground">{p.notFound}</p>
+            <Button asChild className="mt-6">
+              <Link to="/dashboard">{p.backToProjects}</Link>
+            </Button>
           </div>
         )}
 

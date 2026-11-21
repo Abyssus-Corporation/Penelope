@@ -67,13 +67,21 @@ describe("ProjectPage", () => {
     expect(await screen.findByRole("heading", { name: "Project not found" })).toBeVisible();
     expect(screen.getByText(/This project doesn't exist/)).toBeVisible();
     expect(document.body).not.toHaveTextContent("555-0100");
+    expect(screen.getByRole("link", { name: "Back to projects" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
   });
 
   it("offers a retry when loading fails", async () => {
     getProject.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(project);
     renderAt("/projects/acme");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("link", { name: "Back to projects" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("heading", { level: 1, name: "acme" })).toBeVisible();
     expect(getProject).toHaveBeenCalledTimes(2);
   });

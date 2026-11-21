@@ -116,6 +116,23 @@ test.describe("security headers on the preview server", () => {
       expect(missing.headers.get(name.toLowerCase()), `404 asset ${name}`).toBe(value);
     }
   });
+
+  test("font licenses are served; a missing /fonts/ file is 404, not the SPA", async () => {
+    for (const name of ["Inter-OFL.txt", "Newsreader-OFL.txt", "ObelMono-OFL.txt"]) {
+      const license = await fetch(new URL(`/fonts/${name}`, BASE));
+      expect(license.status, name).toBe(200);
+      expect(license.headers.get("content-type"), name).toMatch(/^text\/plain/);
+      expect(await license.text(), name).toContain("SIL OPEN FONT LICENSE");
+    }
+
+    const missing = await fetch(new URL("/fonts/x.woff2", BASE));
+    expect(missing.status).toBe(404);
+    expect(await missing.text()).not.toMatch(/<!doctype html>/i);
+    expect(missing.headers.get("cache-control")).toBe(CACHE_CONTROL_ERROR);
+    for (const [name, value] of Object.entries(PREVIEW_SECURITY_HEADERS)) {
+      expect(missing.headers.get(name.toLowerCase()), `404 font ${name}`).toBe(value);
+    }
+  });
 });
 
 test.describe("pages under the production CSP", () => {
