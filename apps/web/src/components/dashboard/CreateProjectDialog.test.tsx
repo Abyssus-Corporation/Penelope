@@ -75,4 +75,22 @@ describe("CreateProjectDialog", () => {
       expect(trigger).toHaveFocus();
     });
   });
+
+  it("keeps a pasted name that is too long and flags it right away", async () => {
+    const user = userEvent.setup();
+    const onCreate = renderDialog();
+    const name = "northwind-industries-holdings-customer-portal-production-eu";
+
+    await user.click(screen.getByRole("button", { name: "New project" }));
+    const input = await screen.findByLabelText("Project name");
+    await user.click(input);
+    await user.paste(name);
+
+    expect(input).toHaveValue(name);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("Use 48 characters or fewer.");
+    await user.click(screen.getByRole("button", { name: "Create project" }));
+    expect(onCreate).not.toHaveBeenCalled();
+    expect(input).toHaveFocus();
+  });
 });

@@ -60,8 +60,6 @@ export const en = {
       themeLight: "Light",
       themeDark: "Dark",
       themeSystem: "System",
-      openUserMenu: "Open user menu",
-      openWorkspaceMenu: "Open workspace menu",
       groups: {
         general: "General",
         admin: "Admin",
@@ -79,7 +77,7 @@ export const en = {
         description: "A project groups your services. Give it a name to get started.",
         name: "Project name",
         namePlaceholder: "my-app",
-        nameHint: "Letters, numbers, dots, dashes and underscores.",
+        nameHint: "Up to {max} letters, numbers, dots, dashes and underscores.",
         cancel: "Cancel",
         submit: "Create project",
         close: "Close",

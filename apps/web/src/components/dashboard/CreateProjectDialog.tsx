@@ -92,8 +92,13 @@ export function CreateProjectDialog({
           <DialogBody>
             <Field
               label={c.name}
-              description={c.nameHint}
-              error={submitted && nameError ? nameMessage[nameError] : undefined}
+              description={c.nameHint.replace("{max}", String(PROJECT_NAME_MAX_LENGTH))}
+              // No maxLength: a pasted name that is too long stays visible and gets an error right away.
+              error={
+                nameError && (submitted || nameError === "tooLong")
+                  ? nameMessage[nameError]
+                  : undefined
+              }
               required
             >
               <Input
@@ -104,7 +109,6 @@ export function CreateProjectDialog({
                 placeholder={c.namePlaceholder}
                 autoComplete="off"
                 spellCheck={false}
-                maxLength={PROJECT_NAME_MAX_LENGTH + 16}
                 className="font-mono"
               />
             </Field>
