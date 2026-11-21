@@ -11,7 +11,8 @@ export interface ProjectRepo {
   provider: GitProvider;
   owner: string;
   name: string;
-  lastCommit: {
+  /** Unknown until the first deploy, e.g. right after a project is created. */
+  lastCommit?: {
     id: string;
     message: string;
   };
