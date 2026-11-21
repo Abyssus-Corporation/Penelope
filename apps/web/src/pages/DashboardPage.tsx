@@ -13,7 +13,9 @@ import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
+import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
 import { PROJECTS } from "@/lib/mock-data";
+import type { Project } from "@/types/project";
 
 type CardSize = "sm" | "md" | "lg";
 
@@ -29,8 +31,10 @@ export function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [size, setSize] = useState<CardSize>("md");
   const [search, setSearch] = useState("");
+  // Seeded from mock data until the API exists; new projects live in memory only.
+  const [projects, setProjects] = useState<Project[]>(PROJECTS);
 
-  const filtered = PROJECTS.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="flex h-screen bg-background">
@@ -114,10 +118,19 @@ export function DashboardPage() {
             </ToggleGroup.Root>
 
             {/* New project */}
-            <button className="flex h-[30px] items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1">
-              <Plus size={12} aria-hidden="true" />
-              {d.projects.new}
-            </button>
+            <CreateProjectDialog
+              existingProjects={projects}
+              onCreate={(project) => setProjects((prev) => [project, ...prev])}
+              trigger={
+                <button
+                  type="button"
+                  className="flex h-[30px] items-center gap-1.5 rounded bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                >
+                  <Plus size={12} aria-hidden="true" />
+                  {d.projects.new}
+                </button>
+              }
+            />
           </div>
         </header>
 
