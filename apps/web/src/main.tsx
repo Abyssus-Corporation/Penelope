@@ -3,9 +3,13 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Toaster } from "sonner";
+import { initTheme } from "@/hooks/useTheme";
 import { I18nProvider } from "@/i18n";
 import "./index.css";
 import { routes } from "./routes";
+
+// Before the first render, so no page paints in the wrong theme.
+initTheme();
 
 // A data router is needed for the route errorElement.
 const router = createBrowserRouter(routes);
