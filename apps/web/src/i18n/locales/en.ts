@@ -66,6 +66,7 @@ export const en = {
       openWorkspaceMenu: "Open workspace menu",
       openNavigation: "Open navigation",
       navigation: "Navigation",
+      closeNavigation: "Close navigation",
       groups: {
         general: "General",
         admin: "Admin",
