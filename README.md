@@ -39,10 +39,14 @@ pnpm workspace
        │     ├── types/        Project / Service / GitProvider
        │     └── lib/          utils, mock-data
        │
-       └── packages/         (planned shared libs)
+       ├── apps/api          Axum + Tokio + sqlx (Postgres)
+       │
+       └── packages/
+             ├── api-types/  Generated OpenAPI TypeScript types
+             └── helene/     Isolated @helene/ui component library
 ```
 
-The web app is currently the only package. Shared backend clients, API types, and other utilities will live under `packages/` as the platform grows.
+The dashboard still runs against mock data. The API skeleton in `apps/api` exposes liveness and readiness probes and a deny-by-default auth layer; TypeScript types are generated from the OpenAPI document into `@penelope/api-types`. Helene (`@helene/ui`) is a standalone component library and must not depend on Penelope.
 
 ---
 
@@ -161,8 +165,15 @@ Penelope/
 │       ├── tailwind.config.js
 │       └── vite.config.ts
 │
-├── packages/                 (planned)
+│   └── api/                  Axum API
 │
+├── packages/
+│   ├── api-types/            @penelope/api-types (generated OpenAPI types)
+│   └── helene/               @helene/ui (reusable components)
+│
+├── Cargo.toml                Rust workspace
+├── rust-toolchain.toml
+├── docker-compose.yml        Postgres 16 (development)
 ├── package.json
 ├── pnpm-workspace.yaml
 └── LICENSE
@@ -190,6 +201,25 @@ pnpm build            # production build
 pnpm typecheck        # TypeScript type-check across all packages
 pnpm lint             # ESLint across all packages
 pnpm format           # Prettier across apps/**
+```
+
+### API
+
+The API is a Rust workspace member (`cargo run -p api`). Copy `.env.example` to `.env` first (that file is gitignored).
+
+```bash
+cp .env.example .env
+docker compose up -d db          # Postgres 16
+cargo run -p api                 # listen on BIND_ADDRESS (default 0.0.0.0:3000)
+# GET /healthz  — liveness (no database)
+# GET /readyz   — readiness (checks Postgres)
+```
+
+Regenerate the OpenAPI document and the TypeScript types after changing API routes or schemas:
+
+```bash
+cargo run -p api --bin gen-openapi
+pnpm --filter @penelope/api-types generate
 ```
 
 ---
