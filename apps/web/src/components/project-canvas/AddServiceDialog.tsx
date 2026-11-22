@@ -1,4 +1,27 @@
-import React, { useRef, useState, type FormEvent } from "react";
+import React, {
+  forwardRef,
+  useRef,
+  useState,
+  type FormEvent,
+  type TextareaHTMLAttributes,
+} from "react";
+import { useFieldControl } from "@/components/ui/field-context";
+
+const FieldTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  function FieldTextarea(props, ref) {
+    const field = useFieldControl();
+    return (
+      <textarea
+        ref={ref}
+        id={field?.id}
+        aria-describedby={field?.describedBy}
+        aria-invalid={field?.invalid || undefined}
+        required={field?.required}
+        {...props}
+      />
+    );
+  },
+);
 import {
   AppWindow,
   Clock,
@@ -261,7 +284,7 @@ function ServiceForm({
           required
         >
           {sourceType === "dockerfile" ? (
-            <textarea
+            <FieldTextarea
               ref={sourceRef as React.RefObject<HTMLTextAreaElement>}
               value={source}
               onChange={(event) => setSource(event.target.value)}

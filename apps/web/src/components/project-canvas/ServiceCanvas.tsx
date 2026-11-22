@@ -92,7 +92,7 @@ export interface ServiceCanvasProps {
   onDisconnect: (edgeId: string) => void;
   onPositionsChange: (positions: Positions) => void;
   /** Right-click (or long-press) on the background: open context menu. */
-  onContextMenu: (flowPos: Point, screenPos: { x: number; y: number }) => void;
+  onContextMenu: (flowPos: Point, screenPos: { x: number; y: number }, fromTouch?: boolean) => void;
   onRenameService: (id: string, currentName: string) => void;
   onRemoveService: (id: string) => void;
   onRemoveDomain: (id: string) => void;
@@ -362,11 +362,12 @@ function Canvas({
 
   // ─── Adding, arranging ────────────────────────────────────────────────────
   const requestAddAt = useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, fromTouch = false) => {
       const point = flow.screenToFlowPosition({ x: clientX, y: clientY });
       onContextMenu(
         { x: point.x - NODE_WIDTH / 2, y: point.y - DEFAULT_NODE_HEIGHT / 2 },
         { x: clientX, y: clientY },
+        fromTouch,
       );
     },
     [flow, onContextMenu],
@@ -389,7 +390,7 @@ function Canvas({
       y,
       timer: window.setTimeout(() => {
         press.current = null;
-        requestAddAt(x, y);
+        requestAddAt(x, y, true);
       }, LONG_PRESS_MS),
     };
   };
@@ -600,8 +601,12 @@ function Canvas({
               isValidConnection={isValidConnection}
               onPaneContextMenu={(event) => {
                 event.preventDefault();
+                // press.current is non-null when the touch is still held down,
+                // meaning the browser fired contextmenu before our timer (Android
+                // long-press).  Cancel the timer to avoid opening the menu twice.
+                const isTouch = press.current !== null;
                 cancelPress();
-                requestAddAt(event.clientX, event.clientY);
+                requestAddAt(event.clientX, event.clientY, isTouch);
               }}
               nodeExtent={NODE_EXTENT}
               edgesFocusable={false}

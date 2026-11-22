@@ -235,9 +235,19 @@ export function ProjectCanvasView({
     setAdding({ fromCanvas, position, kind });
   };
 
-  const handleContextMenu = useCallback((flowPos: Point, screenPos: { x: number; y: number }) => {
-    setContextMenu({ screen: screenPos, flow: flowPos });
-  }, []);
+  // When the menu is opened by a touch long-press, Chrome synthesises
+  // compatibility pointer events on touchend that Radix treats as an outside
+  // click and uses to immediately close the menu.  We guard against this by
+  // ignoring onOpenChange(false) for a short window after a touch-opened menu.
+  const touchMenuGuard = useRef(0);
+
+  const handleContextMenu = useCallback(
+    (flowPos: Point, screenPos: { x: number; y: number }, fromTouch = false) => {
+      if (fromTouch) touchMenuGuard.current = Date.now() + 700;
+      setContextMenu({ screen: screenPos, flow: flowPos });
+    },
+    [],
+  );
 
   const closeContextMenu = () => setContextMenu(null);
 
@@ -322,7 +332,10 @@ export function ProjectCanvasView({
   const empty = services !== null && services.length === 0;
 
   // ─── Shared add menu content ──────────────────────────────────────────────────
-  const AddMenuContent = ({ fromFlow, flowPos }: { fromFlow?: boolean; flowPos?: Point }) => (
+  // Defined as a plain function (not a React component) so calling it inline
+  // avoids creating a new fiber type on every render, which would cause the
+  // menu items to detach from the DOM mid-interaction.
+  const addMenuContent = ({ fromFlow, flowPos }: { fromFlow?: boolean; flowPos?: Point }) => (
     <>
       <DropdownMenu.Item
         className={MENU_ITEM}
@@ -414,7 +427,7 @@ export function ProjectCanvasView({
                   onCloseAutoFocus={(event) => addingRef.current && event.preventDefault()}
                   className="z-50 w-48 animate-fade-in rounded-md border border-border bg-card p-1 shadow-lg"
                 >
-                  <AddMenuContent />
+                  {addMenuContent({})}
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
@@ -504,7 +517,7 @@ export function ProjectCanvasView({
           modal={false}
           open
           onOpenChange={(isOpen) => {
-            if (!isOpen) closeContextMenu();
+            if (!isOpen && Date.now() >= touchMenuGuard.current) closeContextMenu();
           }}
         >
           <DropdownMenu.Trigger asChild>
@@ -525,7 +538,7 @@ export function ProjectCanvasView({
               }}
               className="z-50 w-48 animate-fade-in rounded-md border border-border bg-card p-1 shadow-lg"
             >
-              <AddMenuContent fromFlow flowPos={contextMenu.flow} />
+              {addMenuContent({ fromFlow: true, flowPos: contextMenu.flow })}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
