@@ -183,7 +183,9 @@ export function useProjectGraph(
           domain.target === id ? { ...domain, target: null } : domain,
         );
         const services = current.services.filter((service) => service.id !== id);
-        const { [id]: _removed, ...positions } = current.positions;
+        const positions = Object.fromEntries(
+          Object.entries(current.positions).filter(([k]) => k !== id),
+        );
         return { ...current, services, edges, domains, positions };
       }),
     [update, defaultEdges],
@@ -192,7 +194,9 @@ export function useProjectGraph(
   const removeDomain = useCallback(
     (id: string) =>
       update((current) => {
-        const { [id]: _removed, ...positions } = current.positions;
+        const positions = Object.fromEntries(
+          Object.entries(current.positions).filter(([k]) => k !== id),
+        );
         return {
           ...current,
           domains: current.domains.filter((domain) => domain.id !== id),

@@ -1,7 +1,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
-import { GitCommitHorizontal, KeyRound, X } from "lucide-react";
-import type { ComponentType, ReactNode } from "react";
+import { GitCommitHorizontal, KeyRound, X, type LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { DialogOverlay } from "@/components/ui/dialog";
 import { useI18n } from "@/i18n";
 import { Connections } from "./Connections";
@@ -194,13 +194,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function EmptyTab({
-  icon: Icon,
-  children,
-}: {
-  icon: ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
-  children: ReactNode;
-}) {
+function EmptyTab({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
     <div className="mt-5 flex flex-col items-center gap-3 rounded-md border border-dashed border-border px-4 py-8 text-center">
       <Icon size={18} strokeWidth={1.5} className="text-muted-foreground/50" aria-hidden="true" />

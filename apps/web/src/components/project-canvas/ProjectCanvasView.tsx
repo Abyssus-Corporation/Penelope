@@ -521,7 +521,7 @@ export function ProjectCanvasView({
               aria-label={c.addMenu}
               onCloseAutoFocus={(event) => {
                 event.preventDefault();
-                addingRef.current && addButtonRef.current?.focus();
+                if (addingRef.current) addButtonRef.current?.focus();
               }}
               className="z-50 w-48 animate-fade-in rounded-md border border-border bg-card p-1 shadow-lg"
             >
@@ -604,7 +604,6 @@ export function ProjectCanvasView({
 
 function RenameDialog({
   open,
-  serviceId: _serviceId,
   currentName,
   existingNames,
   onRename,
