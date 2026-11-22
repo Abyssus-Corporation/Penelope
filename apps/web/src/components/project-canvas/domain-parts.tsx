@@ -10,7 +10,7 @@ export function DomainIcon({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground",
+        "flex size-7 shrink-0 items-center justify-center rounded-md border border-cyan-500/25 bg-cyan-500/10 text-cyan-400",
         className,
       )}
     >

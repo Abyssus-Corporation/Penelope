@@ -1,5 +1,14 @@
-import { useId, useRef, useState, type FormEvent } from "react";
-import * as Tabs from "@radix-ui/react-tabs";
+import React, { useRef, useState, type FormEvent } from "react";
+import {
+  AppWindow,
+  Clock,
+  Cpu,
+  Database,
+  MemoryStick,
+  Server,
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,17 +24,10 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n";
 import { DomainForm } from "./DomainForm";
-import { SELECT } from "./form-styles";
+import { Select } from "./Select";
 import type { AddedService } from "./storage";
 import { fill } from "./text";
-import {
-  SERVICE_KINDS,
-  SOURCE_TYPES,
-  type CanvasDomain,
-  type CanvasService,
-  type ServiceKind,
-  type ServiceSourceType,
-} from "./types";
+import { SERVICE_KINDS, type CanvasDomain, type CanvasService, type ServiceKind } from "./types";
 import {
   SERVICE_NAME_MAX_LENGTH,
   SOURCE_MAX_LENGTH,
@@ -33,20 +35,26 @@ import {
   validateSource,
 } from "./validation";
 
-const TAB =
-  "-mb-px border-b-2 border-transparent px-1 pb-2 pt-1 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=active]:border-foreground data-[state=active]:font-medium data-[state=active]:text-foreground coarse:pb-3";
+/** The entry point for adding to the canvas: "repo" | "docker" | "domain". */
+export type AddKind = "repo" | "docker" | "domain";
 
-export type AddKind = "service" | "domain";
+const KIND_ICONS: Record<ServiceKind, LucideIcon> = {
+  web: AppWindow,
+  service: Server,
+  worker: Cpu,
+  cron: Clock,
+  database: Database,
+  cache: MemoryStick,
+};
 
 /**
- * Add to the canvas: a service or a domain (tabs; the toolbar menu picks the first
- * tab, right-click opens on Service). Errors show after the first submit, focus goes
- * to the first invalid field, and Radix keeps focus inside until the dialog closes.
- * Each form's state lives in its tab, so closing the dialog resets it.
+ * Modal for adding a service (repository or Docker image) or a domain. Opens in a
+ * specific mode — no tab switching inside. Right-clicking or the add button both
+ * use this, with the mode pre-set by the caller's menu selection.
  */
 export function AddServiceDialog({
   open,
-  initialKind = "service",
+  kind,
   existingNames,
   services,
   domainNames,
@@ -56,7 +64,8 @@ export function AddServiceDialog({
   onCloseAutoFocus,
 }: {
   open: boolean;
-  initialKind?: AddKind;
+  /** Determines which form is shown — set once when the dialog opens. */
+  kind: AddKind | null;
   existingNames: readonly string[];
   services: readonly CanvasService[];
   domainNames: readonly string[];
@@ -68,24 +77,21 @@ export function AddServiceDialog({
   const t = useI18n();
   const a = t.project.add;
   const d = t.project.domain;
-  const [kind, setKind] = useState<AddKind>(initialKind);
-  const [openedWith, setOpenedWith] = useState<{ open: boolean; kind: AddKind }>({
-    open,
-    kind: initialKind,
-  });
-  // Each opening starts on the tab the caller asked for.
-  if (openedWith.open !== open || (open && openedWith.kind !== initialKind)) {
-    setOpenedWith({ open, kind: initialKind });
-    if (open) setKind(initialKind);
-  }
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const title = kind === "repo" ? a.titleRepo : kind === "docker" ? a.titleDocker : d.addTitle;
+  const description =
+    kind === "repo"
+      ? a.descriptionRepo
+      : kind === "docker"
+        ? a.descriptionDocker
+        : d.addDescription;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && kind !== null} onOpenChange={onOpenChange}>
       <DialogContent
         ref={contentRef}
         closeLabel={a.close}
-        // Taller than a 1280×800 screen at 200% zoom (400px): scroll inside, never clip.
         className="max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
@@ -94,76 +100,84 @@ export function AddServiceDialog({
         onCloseAutoFocus={onCloseAutoFocus}
       >
         <DialogHeader>
-          <DialogTitle>{kind === "service" ? a.title : d.addTitle}</DialogTitle>
-          <DialogDescription>
-            {kind === "service" ? a.description : d.addDescription}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <Tabs.Root value={kind} onValueChange={(value) => setKind(value as AddKind)}>
-          <Tabs.List aria-label={a.kinds} className="flex gap-5 border-b border-border px-5">
-            <Tabs.Trigger value="service" className={TAB}>
-              {a.tabService}
-            </Tabs.Trigger>
-            <Tabs.Trigger value="domain" className={TAB}>
-              {a.tabDomain}
-            </Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="service" className="focus-visible:outline-none">
-            <ServiceForm
-              existingNames={existingNames}
-              onAdd={(service) => {
-                onAdd(service);
-                onOpenChange(false);
-              }}
-            />
-          </Tabs.Content>
-          <Tabs.Content value="domain" className="focus-visible:outline-none">
-            <DomainForm
-              services={services}
-              domainNames={domainNames}
-              onAdd={(domain) => {
-                onAddDomain(domain);
-                onOpenChange(false);
-              }}
-            />
-          </Tabs.Content>
-        </Tabs.Root>
+
+        {kind === "domain" && (
+          <DomainForm
+            services={services}
+            domainNames={domainNames}
+            onAdd={(domain) => {
+              onAddDomain(domain);
+              onOpenChange(false);
+            }}
+          />
+        )}
+
+        {(kind === "repo" || kind === "docker") && (
+          <ServiceForm
+            key={kind}
+            sourceType={kind === "repo" ? "repo" : "image"}
+            allowDockerSourceToggle={kind === "docker"}
+            existingNames={existingNames}
+            onAdd={(service) => {
+              onAdd(service);
+              onOpenChange(false);
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
 function ServiceForm({
+  sourceType: initialSourceType,
+  allowDockerSourceToggle,
   existingNames,
   onAdd,
 }: {
+  sourceType: "repo" | "image";
+  allowDockerSourceToggle?: boolean;
   existingNames: readonly string[];
   onAdd: (service: AddedService) => void;
 }) {
   const a = useI18n().project.add;
   const c = useI18n().project.canvas;
+  const [dockerSource, setDockerSource] = useState<"image" | "dockerfile">("image");
+  const sourceType = allowDockerSourceToggle ? dockerSource : initialSourceType;
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<ServiceKind>("service");
-  const [sourceType, setSourceType] = useState<ServiceSourceType>("repo");
+  const [kind, setKind] = useState<ServiceKind>(initialSourceType === "image" ? "service" : "web");
   const [source, setSource] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
-  const sourceRef = useRef<HTMLInputElement>(null);
-  const typeId = useId();
+  const sourceRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   const nameError = validateServiceName(name, existingNames);
   const sourceError = validateSource(sourceType, source);
+
   const nameMessages = {
     required: a.errors.nameRequired,
     tooLong: fill(a.errors.nameTooLong, { max: SERVICE_NAME_MAX_LENGTH }),
     invalid: a.errors.nameInvalid,
     taken: a.errors.nameTaken,
   } as const;
+
   const sourceMessages = {
     required: a.errors.sourceRequired,
     tooLong: fill(a.errors.sourceTooLong, { max: SOURCE_MAX_LENGTH }),
     invalid: a.errors.sourceInvalid[sourceType],
   } as const;
+
+  const kindOptions = SERVICE_KINDS.map((value) => ({
+    value,
+    label: c.kinds[value],
+    icon: (() => {
+      const Icon = KIND_ICONS[value];
+      return <Icon size={13} strokeWidth={1.5} />;
+    })(),
+  }));
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -201,45 +215,44 @@ function ServiceForm({
           />
         </Field>
 
-        <div className="space-y-1.5">
-          <label htmlFor={typeId} className="text-[12px] font-medium text-foreground">
-            {a.type}
-          </label>
-          <select
-            id={typeId}
-            value={kind}
-            onChange={(event) => setKind(event.target.value as ServiceKind)}
-            className={SELECT}
-          >
-            {SERVICE_KINDS.map((value) => (
-              <option key={value} value={value}>
-                {c.kinds[value]}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select<ServiceKind> label={a.type} value={kind} options={kindOptions} onChange={setKind} />
 
-        <fieldset className="space-y-1.5">
-          <legend className="text-[12px] font-medium text-foreground">{a.source}</legend>
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-0.5">
-            {SOURCE_TYPES.map((value) => (
-              <label
-                key={value}
-                className="flex min-h-6 cursor-pointer items-center gap-2 text-[13px] text-foreground coarse:min-h-10"
-              >
-                <input
-                  type="radio"
-                  name="source-type"
-                  value={value}
-                  checked={sourceType === value}
-                  onChange={() => setSourceType(value)}
-                  className="size-4 accent-primary"
-                />
-                {c.sources[value]}
-              </label>
-            ))}
+        {allowDockerSourceToggle && (
+          <div className="flex items-center gap-1 rounded-md border border-input p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setDockerSource("image");
+                setSource("");
+                setSubmitted(false);
+              }}
+              className={cn(
+                "flex-1 rounded py-1 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                dockerSource === "image"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {a.dockerSourceImage}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDockerSource("dockerfile");
+                setSource("");
+                setSubmitted(false);
+              }}
+              className={cn(
+                "flex-1 rounded py-1 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                dockerSource === "dockerfile"
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {a.dockerSourceDockerfile}
+            </button>
           </div>
-        </fieldset>
+        )}
 
         <Field
           label={a.sourceLabel[sourceType]}
@@ -247,17 +260,31 @@ function ServiceForm({
           error={submitted && sourceError ? sourceMessages[sourceError] : undefined}
           required
         >
-          <Input
-            ref={sourceRef}
-            size="sm"
-            value={source}
-            onChange={(event) => setSource(event.target.value)}
-            placeholder={a.sourcePlaceholder[sourceType]}
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            className="font-mono coarse:h-10 coarse:text-base"
-          />
+          {sourceType === "dockerfile" ? (
+            <textarea
+              ref={sourceRef as React.RefObject<HTMLTextAreaElement>}
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              placeholder={a.sourcePlaceholder[sourceType]}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              rows={8}
+              className="w-full resize-y rounded border border-input bg-transparent px-2 py-1.5 font-mono text-[13px] text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            />
+          ) : (
+            <Input
+              ref={sourceRef as React.RefObject<HTMLInputElement>}
+              size="sm"
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+              placeholder={a.sourcePlaceholder[sourceType]}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="font-mono coarse:h-10 coarse:text-base"
+            />
+          )}
         </Field>
       </DialogBody>
       <DialogFooter>

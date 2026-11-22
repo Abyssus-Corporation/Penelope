@@ -163,7 +163,7 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
         <DropdownMenu.Label className="px-2.5 py-1 text-[11px] text-muted-foreground">
           {t.dashboard.sidebar.workspace}
         </DropdownMenu.Label>
-        <DropdownMenu.Item className="flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent">
+        <DropdownMenu.Item className="flex h-8 cursor-pointer select-none items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none transition-colors data-[highlighted]:bg-foreground/10">
           <span className="flex size-5 shrink-0 items-center justify-center rounded bg-foreground text-[10px] font-bold text-background">
             P
           </span>
@@ -179,7 +179,7 @@ function WorkspaceSwitcher({ collapsed }: { collapsed: boolean }) {
 const MOCK_USER = { name: "Ada Lovelace", email: "ada@acme.com" };
 
 const MENU_ITEM =
-  "flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none transition-colors data-[highlighted]:bg-accent";
+  "flex h-8 cursor-pointer select-none items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none transition-colors data-[highlighted]:bg-foreground/10";
 
 const THEME_OPTIONS = [
   { value: "light" as Theme, Icon: Sun, labelKey: "themeLight" as const },

@@ -35,6 +35,12 @@ export interface ProjectGraph {
   connect: (source: string, target: string) => GraphLinkError | null;
   disconnect: (id: string) => void;
   savePositions: (positions: Positions) => void;
+  /** Remove a locally-added service and clean up its edges and domain targets. */
+  removeService: (id: string) => void;
+  /** Remove a domain. */
+  removeDomain: (id: string) => void;
+  /** Rename a locally-added service (id equals its name in storage). */
+  renameService: (oldId: string, newName: string) => void;
 }
 
 const toCanvasService = (service: AddedService): CanvasService => ({
@@ -167,6 +173,63 @@ export function useProjectGraph(
     [update],
   );
 
+  const removeService = useCallback(
+    (id: string) =>
+      update((current) => {
+        const edges = (current.edges ?? defaultEdges).filter(
+          (edge) => edge.source !== id && edge.target !== id,
+        );
+        const domains = current.domains.map((domain) =>
+          domain.target === id ? { ...domain, target: null } : domain,
+        );
+        const services = current.services.filter((service) => service.id !== id);
+        const { [id]: _removed, ...positions } = current.positions;
+        return { ...current, services, edges, domains, positions };
+      }),
+    [update, defaultEdges],
+  );
+
+  const removeDomain = useCallback(
+    (id: string) =>
+      update((current) => {
+        const { [id]: _removed, ...positions } = current.positions;
+        return {
+          ...current,
+          domains: current.domains.filter((domain) => domain.id !== id),
+          edges: (current.edges ?? defaultEdges).filter(
+            (edge) => edge.source !== id && edge.target !== id,
+          ),
+          positions,
+        };
+      }),
+    [update, defaultEdges],
+  );
+
+  const renameService = useCallback(
+    (oldId: string, newName: string) =>
+      update((current) => {
+        const services = current.services.map((service) =>
+          service.id === oldId ? { ...service, id: newName, name: newName } : service,
+        );
+        const edges = (current.edges ?? defaultEdges).map((edge) => ({
+          ...edge,
+          id: edgeId(
+            edge.source === oldId ? newName : edge.source,
+            edge.target === oldId ? newName : edge.target,
+          ),
+          source: edge.source === oldId ? newName : edge.source,
+          target: edge.target === oldId ? newName : edge.target,
+        }));
+        const domains = current.domains.map((domain) =>
+          domain.target === oldId ? { ...domain, target: newName } : domain,
+        );
+        const { [oldId]: pos, ...rest } = current.positions;
+        const positions = pos !== undefined ? { ...rest, [newName]: pos } : rest;
+        return { ...current, services, edges, domains, positions };
+      }),
+    [update, defaultEdges],
+  );
+
   if (!services || !stored) return null;
   return {
     services,
@@ -179,5 +242,8 @@ export function useProjectGraph(
     connect,
     disconnect,
     savePositions,
+    removeService,
+    removeDomain,
+    renameService,
   };
 }

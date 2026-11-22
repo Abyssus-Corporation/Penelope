@@ -208,6 +208,12 @@ export const en = {
       addMenu: "Add to canvas",
       addServiceItem: "Service",
       addDomainItem: "Domain",
+      addRepo: "Repository",
+      addDocker: "Docker",
+      addTemplates: "Templates",
+      renameService: "Rename",
+      removeService: "Remove",
+      removeDomain: "Remove domain",
       autoArrange: "Auto-arrange",
       arranged: "Services arranged.",
       added: "Added {name}.",
@@ -232,6 +238,13 @@ export const en = {
         cache: "Cache",
       },
       sources: { repo: "Repository", image: "Docker image", dockerfile: "Dockerfile" },
+      templateNames: {
+        postgres: "PostgreSQL",
+        mysql: "MySQL",
+        redis: "Redis",
+        mongodb: "MongoDB",
+        rabbitmq: "RabbitMQ",
+      },
       deployed: "Deployed {time}",
       open: "Open {name}",
     },
@@ -243,22 +256,31 @@ export const en = {
       title: "Add a service",
       description:
         "It's added to this canvas in your browser; deploying it needs the services API.",
+      titleRepo: "Add from repository",
+      titleDocker: "Add Docker service",
+      descriptionRepo:
+        "Connect a repository to build and deploy it. It's added to this canvas in your browser.",
+      descriptionDocker:
+        "Deploy a Docker image by name or point to a Dockerfile. It's added to this canvas in your browser.",
+      dockerSourceImage: "Docker image",
+      dockerSourceDockerfile: "Dockerfile",
       name: "Service name",
       namePlaceholder: "billing-worker",
       nameHint:
         "Up to {max} lowercase letters, numbers and dashes. Other services reach it by this name.",
       type: "Type",
       source: "Source",
-      sourceLabel: { repo: "Repository name", image: "Image name", dockerfile: "Dockerfile path" },
+      sourceLabel: { repo: "Repository name", image: "Image name", dockerfile: "Dockerfile" },
       sourceHint: {
         repo: "owner/name, as on GitHub, GitLab, Gitea or Cursor Origin.",
         image: "An image name, with an optional :tag.",
-        dockerfile: "Path from the repository root.",
+        dockerfile: "Paste the contents of your Dockerfile.",
       },
       sourcePlaceholder: {
         repo: "acme/billing",
         image: "postgres:16-alpine",
-        dockerfile: "services/billing/Dockerfile",
+        dockerfile:
+          'FROM node:22-alpine\nWORKDIR /app\nCOPY . .\nRUN npm install\nCMD ["node", "server.js"]',
       },
       cancel: "Cancel",
       submit: "Add service",
@@ -274,9 +296,21 @@ export const en = {
         sourceInvalid: {
           repo: "Use the form owner/name, for example acme/billing.",
           image: "Use an image name like postgres:16-alpine, without spaces.",
-          dockerfile: "Use a relative path like services/api/Dockerfile, without spaces.",
+          dockerfile: "Paste a valid Dockerfile.",
         },
       },
+    },
+    template: {
+      title: "Add {name}",
+      description:
+        "It's added to this canvas in your browser; deploying it needs the services API.",
+      version: "Version",
+      add: "Add {name}",
+    },
+    rename: {
+      title: "Rename service",
+      description: "The name is how other services reach this one.",
+      submit: "Rename",
     },
     domain: {
       role: "domain",

@@ -1,8 +1,41 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
-import { ChevronDown, Globe, LayoutList, Plus, Server, Workflow, Wand2 } from "lucide-react";
+import {
+  Container,
+  Database,
+  GitBranch,
+  Globe,
+  LayoutList,
+  MemoryStick,
+  Plus,
+  Server,
+  Workflow,
+  Wand2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import type { ApiProject } from "@/api";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
@@ -11,10 +44,12 @@ import { NARROW_QUERY, useMediaQuery } from "./hooks";
 import type { ServiceCanvasHandle } from "./ServiceCanvas";
 import { ServiceList } from "./ServiceList";
 import type { AddedService } from "./storage";
+import { SERVICE_TEMPLATES, uniqueTemplateName, type ServiceTemplate } from "./templates";
 import { fill } from "./text";
 import type { AddKind } from "./AddServiceDialog";
 import type { CanvasDomain, Point, ProjectView } from "./types";
 import { useProjectGraph } from "./use-project-graph";
+import { SERVICE_NAME_MAX_LENGTH, validateServiceName } from "./validation";
 
 // React Flow + d3 is ~65 kB gzip; only the canvas view downloads it (not the list).
 const ServiceCanvas = lazy(() => import("./ServiceCanvas"));
@@ -25,6 +60,9 @@ const ServiceSheet = lazy(() =>
 );
 const AddServiceDialog = lazy(() =>
   import("./AddServiceDialog").then((module) => ({ default: module.AddServiceDialog })),
+);
+const TemplateDialog = lazy(() =>
+  import("./TemplateDialog").then((module) => ({ default: module.TemplateDialog })),
 );
 
 /** `?node=<id>` holds the open sheet (service or domain), so Back closes it and a link opens it. */
@@ -38,7 +76,9 @@ const ITEM = cn(
   "data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm",
 );
 const MENU_ITEM =
-  "flex h-8 cursor-pointer items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none data-[highlighted]:bg-accent coarse:h-10";
+  "flex h-8 cursor-pointer select-none items-center gap-2 rounded px-2.5 text-[13px] text-foreground outline-none transition-colors data-[highlighted]:bg-foreground/10 data-[highlighted]:text-foreground coarse:h-10";
+const MENU_LABEL =
+  "px-2.5 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/70";
 const TOOL = cn(
   "flex h-[30px] items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground transition-colors coarse:h-[38px]",
   "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -54,6 +94,15 @@ function findServiceElement(root: HTMLElement | null, id: string): HTMLElement |
       (element.dataset.serviceId ?? element.dataset.domainId ?? element.dataset.id) === id,
   );
 }
+
+/** Template icon for the menu. */
+const TEMPLATE_ICONS: Record<string, typeof Database> = {
+  postgres: Database,
+  mysql: Database,
+  mongodb: Database,
+  redis: MemoryStick,
+  rabbitmq: Server,
+};
 
 export function ProjectCanvasView({
   project,
@@ -174,15 +223,77 @@ export function ProjectCanvasView({
   const addingRef = useRef(false);
   addingRef.current = adding !== null;
 
-  const startAdd = (kind: AddKind) => {
+  // ─── Context menu (right-click on canvas).
+  const [contextMenu, setContextMenu] = useState<{
+    screen: { x: number; y: number };
+    flow: Point;
+  } | null>(null);
+
+  const startAdd = (kind: AddKind, position?: Point, fromCanvas = false) => {
     addedId.current = null;
     addingRef.current = true;
-    setAdding({ fromCanvas: false, kind });
+    setAdding({ fromCanvas, position, kind });
   };
-  const requestAddAt = useCallback((position: Point) => {
-    addedId.current = null;
-    setAdding({ fromCanvas: true, position, kind: "service" });
+
+  const handleContextMenu = useCallback((flowPos: Point, screenPos: { x: number; y: number }) => {
+    setContextMenu({ screen: screenPos, flow: flowPos });
   }, []);
+
+  const closeContextMenu = () => setContextMenu(null);
+
+  // ─── Template dialog ──────────────────────────────────────────────────────────
+  const [addingTemplate, setAddingTemplate] = useState<{
+    template: ServiceTemplate;
+    position?: Point;
+  } | null>(null);
+  const startTemplateAdd = (templateId: string, position?: Point) => {
+    const template = SERVICE_TEMPLATES.find((t) => t.id === templateId);
+    if (!template || !graph) return;
+    setAddingTemplate({ template, position });
+  };
+
+  const confirmTemplateAdd = (service: AddedService) => {
+    if (!graph) return;
+    const pos = addingTemplate?.position ?? canvasRef.current?.freeSpot();
+    graph.addService(service, pos);
+    addedId.current = service.id;
+    setAnnouncement(fill(c.added, { name: service.name }));
+    setAddingTemplate(null);
+  };
+
+  const afterTemplateClosed = (event: Event) => {
+    event.preventDefault();
+    const id = addedId.current;
+    if (id && view === "canvas") canvasRef.current?.focusService(id);
+    else if (id) requestAnimationFrame(() => findServiceElement(rootRef.current, id)?.focus());
+    else addButtonRef.current?.focus();
+  };
+
+  // ─── Rename dialog ────────────────────────────────────────────────────────────
+  const [renamingService, setRenamingService] = useState<{
+    id: string;
+    currentName: string;
+  } | null>(null);
+
+  const handleRenameService = useCallback((id: string, currentName: string) => {
+    setRenamingService({ id, currentName });
+  }, []);
+
+  // ─── Remove actions ───────────────────────────────────────────────────────────
+  const handleRemoveService = useCallback(
+    (id: string) => {
+      graph?.removeService(id);
+    },
+    [graph],
+  );
+
+  const handleRemoveDomain = useCallback(
+    (id: string) => {
+      graph?.removeDomain(id);
+    },
+    [graph],
+  );
+
   const add = (service: AddedService) => {
     // Toolbar: a free spot in the middle of the view. Right-click: where the click was.
     const position = adding?.position ?? canvasRef.current?.freeSpot();
@@ -210,6 +321,78 @@ export function ProjectCanvasView({
   const shownDomain = domains?.find((domain) => domain.id === shownId) ?? null;
   const empty = services !== null && services.length === 0;
 
+  // ─── Shared add menu content ──────────────────────────────────────────────────
+  const AddMenuContent = ({ fromFlow, flowPos }: { fromFlow?: boolean; flowPos?: Point }) => (
+    <>
+      <DropdownMenu.Item
+        className={MENU_ITEM}
+        onSelect={() => {
+          closeContextMenu();
+          startAdd("repo", flowPos, fromFlow);
+        }}
+      >
+        <GitBranch
+          size={13}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="text-muted-foreground"
+        />
+        {c.addRepo}
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        className={MENU_ITEM}
+        onSelect={() => {
+          closeContextMenu();
+          startAdd("docker", flowPos, fromFlow);
+        }}
+      >
+        <Container
+          size={13}
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="text-muted-foreground"
+        />
+        {c.addDocker}
+      </DropdownMenu.Item>
+
+      <DropdownMenu.Separator className="my-1 h-px bg-border" />
+      <DropdownMenu.Label className={MENU_LABEL}>{c.addTemplates}</DropdownMenu.Label>
+      {SERVICE_TEMPLATES.map((template) => {
+        const Icon = TEMPLATE_ICONS[template.id] ?? Database;
+        return (
+          <DropdownMenu.Item
+            key={template.id}
+            className={MENU_ITEM}
+            onSelect={() => {
+              closeContextMenu();
+              startTemplateAdd(template.id, flowPos);
+            }}
+          >
+            <Icon
+              size={13}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="text-muted-foreground"
+            />
+            {c.templateNames[template.id as keyof typeof c.templateNames] ?? template.name}
+          </DropdownMenu.Item>
+        );
+      })}
+
+      <DropdownMenu.Separator className="my-1 h-px bg-border" />
+      <DropdownMenu.Item
+        className={MENU_ITEM}
+        onSelect={() => {
+          closeContextMenu();
+          startAdd("domain", flowPos, fromFlow);
+        }}
+      >
+        <Globe size={13} strokeWidth={1.5} aria-hidden="true" className="text-muted-foreground" />
+        {c.addDomainItem}
+      </DropdownMenu.Item>
+    </>
+  );
+
   return (
     <div ref={rootRef} className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 px-4 pb-4 pt-6 sm:px-6 sm:pt-8">
@@ -221,12 +404,6 @@ export function ProjectCanvasView({
                 <button ref={addButtonRef} type="button" className={TOOL}>
                   <Plus size={13} strokeWidth={1.5} aria-hidden="true" />
                   {c.add}
-                  <ChevronDown
-                    size={12}
-                    strokeWidth={1.5}
-                    aria-hidden="true"
-                    className="text-muted-foreground"
-                  />
                 </button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
@@ -234,28 +411,10 @@ export function ProjectCanvasView({
                   align="end"
                   sideOffset={4}
                   aria-label={c.addMenu}
-                  // The dialog opened from the menu owns focus; don't pull it back to the trigger.
                   onCloseAutoFocus={(event) => addingRef.current && event.preventDefault()}
-                  className="z-50 w-44 animate-fade-in rounded-md border border-border bg-card p-1 shadow-lg"
+                  className="z-50 w-48 animate-fade-in rounded-md border border-border bg-card p-1 shadow-lg"
                 >
-                  <DropdownMenu.Item className={MENU_ITEM} onSelect={() => startAdd("service")}>
-                    <Server
-                      size={13}
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                      className="text-muted-foreground"
-                    />
-                    {c.addServiceItem}
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item className={MENU_ITEM} onSelect={() => startAdd("domain")}>
-                    <Globe
-                      size={13}
-                      strokeWidth={1.5}
-                      aria-hidden="true"
-                      className="text-muted-foreground"
-                    />
-                    {c.addDomainItem}
-                  </DropdownMenu.Item>
+                  <AddMenuContent />
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
@@ -329,11 +488,47 @@ export function ProjectCanvasView({
                 onConnect={graph.connect}
                 onDisconnect={graph.disconnect}
                 onPositionsChange={graph.savePositions}
-                onRequestAdd={requestAddAt}
+                onContextMenu={handleContextMenu}
+                onRenameService={handleRenameService}
+                onRemoveService={handleRemoveService}
+                onRemoveDomain={handleRemoveDomain}
               />
             </Suspense>
           </div>
         </div>
+      )}
+
+      {/* Right-click / long-press context menu on the canvas */}
+      {contextMenu && (
+        <DropdownMenu.Root
+          modal={false}
+          open
+          onOpenChange={(isOpen) => {
+            if (!isOpen) closeContextMenu();
+          }}
+        >
+          <DropdownMenu.Trigger asChild>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none fixed"
+              style={{ top: contextMenu.screen.y, left: contextMenu.screen.x }}
+            />
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="start"
+              sideOffset={2}
+              aria-label={c.addMenu}
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                addingRef.current && addButtonRef.current?.focus();
+              }}
+              className="z-50 w-48 animate-fade-in rounded-md border border-border bg-card p-1 shadow-lg"
+            >
+              <AddMenuContent fromFlow flowPos={contextMenu.flow} />
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       )}
 
       {graph && (
@@ -357,7 +552,7 @@ export function ProjectCanvasView({
         <Suspense fallback={null}>
           <AddServiceDialog
             open={adding !== null}
-            initialKind={adding?.kind}
+            kind={adding?.kind ?? null}
             existingNames={graph.services.map((service) => service.name)}
             services={graph.services}
             domainNames={graph.domains.map((domain) => domain.id)}
@@ -368,6 +563,141 @@ export function ProjectCanvasView({
           />
         </Suspense>
       )}
+      {graph && (
+        <Suspense fallback={null}>
+          <TemplateDialog
+            open={addingTemplate !== null}
+            template={addingTemplate?.template ?? null}
+            existingNames={graph.services.map((service) => service.name)}
+            defaultName={
+              addingTemplate
+                ? uniqueTemplateName(
+                    addingTemplate.template.defaultName,
+                    graph.services.map((s) => s.name),
+                  )
+                : ""
+            }
+            onAdd={confirmTemplateAdd}
+            onOpenChange={(next) => !next && setAddingTemplate(null)}
+            onCloseAutoFocus={afterTemplateClosed}
+          />
+        </Suspense>
+      )}
+      {graph && renamingService && (
+        <RenameDialog
+          open={renamingService !== null}
+          serviceId={renamingService.id}
+          currentName={renamingService.currentName}
+          existingNames={graph.services
+            .map((s) => s.name)
+            .filter((name) => name !== renamingService.currentName)}
+          onRename={(newName) => {
+            graph.renameService(renamingService.id, newName);
+            setRenamingService(null);
+          }}
+          onOpenChange={(next) => !next && setRenamingService(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function RenameDialog({
+  open,
+  serviceId: _serviceId,
+  currentName,
+  existingNames,
+  onRename,
+  onOpenChange,
+}: {
+  open: boolean;
+  serviceId: string;
+  currentName: string;
+  existingNames: readonly string[];
+  onRename: (newName: string) => void;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const t = useI18n();
+  const a = t.project.add;
+  const r = t.project.rename;
+  const [name, setName] = useState(currentName);
+  const [submitted, setSubmitted] = useState(false);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setName(currentName);
+      setSubmitted(false);
+    }
+  }, [open, currentName]);
+
+  const nameError = validateServiceName(name, existingNames);
+  const nameMessages = {
+    required: a.errors.nameRequired,
+    tooLong: fill(a.errors.nameTooLong, { max: SERVICE_NAME_MAX_LENGTH }),
+    invalid: a.errors.nameInvalid,
+    taken: a.errors.nameTaken,
+  } as const;
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitted(true);
+    if (nameError) return nameRef.current?.focus();
+    onRename(name.trim());
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        ref={contentRef}
+        closeLabel={a.close}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          nameRef.current?.select();
+          nameRef.current?.focus();
+        }}
+      >
+        <DialogHeader>
+          <DialogTitle>{r.title}</DialogTitle>
+          <DialogDescription>{r.description}</DialogDescription>
+        </DialogHeader>
+        <form noValidate onSubmit={handleSubmit}>
+          <DialogBody className="pt-4">
+            <Field
+              label={a.name}
+              description={fill(a.nameHint, { max: SERVICE_NAME_MAX_LENGTH })}
+              error={
+                nameError && (submitted || nameError === "tooLong")
+                  ? nameMessages[nameError]
+                  : undefined
+              }
+              required
+            >
+              <Input
+                ref={nameRef}
+                size="sm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="font-mono coarse:h-10 coarse:text-base"
+              />
+            </Field>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" size="sm">
+                {a.cancel}
+              </Button>
+            </DialogClose>
+            <Button type="submit" size="sm">
+              {r.submit}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
