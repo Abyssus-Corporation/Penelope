@@ -4,7 +4,7 @@ import { DialogBody, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/i18n";
-import { SELECT } from "./form-styles";
+import { Select } from "./Select";
 import { DnsRecords } from "./DnsRecords";
 import { Hostname } from "./domain-parts";
 import {
@@ -46,7 +46,6 @@ export function DomainForm({
   const [submitted, setSubmitted] = useState(false);
   const labelRef = useRef<HTMLInputElement>(null);
   const hostRef = useRef<HTMLInputElement>(null);
-  const targetRef = useRef<HTMLSelectElement>(null);
   const targetId = useId();
   const targetHintId = useId();
   const targetErrorId = useId();
@@ -77,7 +76,7 @@ export function DomainForm({
     event.preventDefault();
     setSubmitted(true);
     if (type === "generated") {
-      if (targetError) return targetRef.current?.focus();
+      if (targetError) return;
       if (labelError) return labelRef.current?.focus();
       return onAdd({
         id: generated,
@@ -165,23 +164,15 @@ export function DomainForm({
               <span className="text-[11px] text-muted-foreground">{a.optional}</span>
             )}
           </div>
-          <select
-            ref={targetRef}
+          <Select
             id={targetId}
             value={target}
-            onChange={(event) => changeTarget(event.target.value)}
-            aria-describedby={showTargetError ? targetErrorId : targetHintId}
-            aria-invalid={showTargetError ? true : undefined}
-            required={type === "generated"}
-            className={SELECT}
-          >
-            {(type === "custom" || !target) && <option value="">{d.targetNone}</option>}
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              ...(type === "custom" || !target ? [{ value: "", label: d.targetNone }] : []),
+              ...services.map((service) => ({ value: service.id, label: service.name })),
+            ]}
+            onChange={changeTarget}
+          />
           {showTargetError ? (
             <p id={targetErrorId} role="alert" className="text-[12px] text-destructive">
               {d.errors.targetRequired}

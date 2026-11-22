@@ -38,6 +38,7 @@ import "@xyflow/react/dist/base.css";
 import { Maximize, Minus, Plus } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
+import { CanvasActionsContext, type CanvasActions } from "./canvas-actions";
 import { chooseFit } from "./fit";
 import {
   DEFAULT_DOMAIN_HEIGHT,
@@ -90,8 +91,11 @@ export interface ServiceCanvasProps {
   onConnect: (source: string, target: string) => GraphLinkError | null;
   onDisconnect: (edgeId: string) => void;
   onPositionsChange: (positions: Positions) => void;
-  /** Right-click (or long-press) on the background: add a service at this flow point. */
-  onRequestAdd: (position: Point) => void;
+  /** Right-click (or long-press) on the background: open context menu. */
+  onContextMenu: (flowPos: Point, screenPos: { x: number; y: number }, fromTouch?: boolean) => void;
+  onRenameService: (id: string, currentName: string) => void;
+  onRemoveService: (id: string) => void;
+  onRemoveDomain: (id: string) => void;
 }
 
 export interface ServiceCanvasHandle {
@@ -154,7 +158,10 @@ function Canvas({
   onConnect,
   onDisconnect,
   onPositionsChange,
-  onRequestAdd,
+  onContextMenu,
+  onRenameService,
+  onRemoveService,
+  onRemoveDomain,
   handleRef,
 }: ServiceCanvasProps & { handleRef: ForwardedRef<ServiceCanvasHandle> }) {
   const t = useI18n();
@@ -355,11 +362,15 @@ function Canvas({
 
   // ─── Adding, arranging ────────────────────────────────────────────────────
   const requestAddAt = useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, fromTouch = false) => {
       const point = flow.screenToFlowPosition({ x: clientX, y: clientY });
-      onRequestAdd({ x: point.x - NODE_WIDTH / 2, y: point.y - DEFAULT_NODE_HEIGHT / 2 });
+      onContextMenu(
+        { x: point.x - NODE_WIDTH / 2, y: point.y - DEFAULT_NODE_HEIGHT / 2 },
+        { x: clientX, y: clientY },
+        fromTouch,
+      );
     },
-    [flow, onRequestAdd],
+    [flow, onContextMenu],
   );
 
   // Touch has no right-click: a long press on the background does the same.
@@ -379,7 +390,7 @@ function Canvas({
       y,
       timer: window.setTimeout(() => {
         press.current = null;
-        requestAddAt(x, y);
+        requestAddAt(x, y, true);
       }, LONG_PRESS_MS),
     };
   };
@@ -540,101 +551,112 @@ function Canvas({
     [onOpen],
   );
 
+  const canvasActions: CanvasActions = useMemo(
+    () => ({ onRenameService, onRemoveService, onRemoveDomain }),
+    [onRenameService, onRemoveService, onRemoveDomain],
+  );
+
   return (
-    <section
-      ref={sectionRef}
-      aria-label={c.regionLabel}
-      aria-describedby={instructionsId}
-      onKeyDownCapture={onKeyDownCapture}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={cancelPress}
-      onPointerCancel={cancelPress}
-      className={cn(
-        "relative h-full w-full [-webkit-touch-callout:none]",
-        // React Flow reads these variables; point them at our tokens via currentColor.
-        "[--xy-background-color:transparent] [--xy-edge-stroke-selected:currentColor] [--xy-edge-stroke-width:1.5] [--xy-edge-stroke:currentColor]",
-        "[--xy-connectionline-stroke-width:1.5] [--xy-connectionline-stroke:currentColor]",
-        // React Flow's attribution stays (MIT; see the PR notes), in our muted tokens: its
-        // background via RF's own variable, its link via the panel's data-message attribute
-        // (Tailwind would read the underscores in `.react-flow__attribution` as spaces); padded
-        // to a 24px target (WCAG 2.5.8).
-        "[--xy-attribution-background-color:transparent] [&_[data-message]_a]:block [&_[data-message]_a]:px-1 [&_[data-message]_a]:py-1.5 [&_[data-message]_a]:text-muted-foreground",
-      )}
-    >
-      <p id={instructionsId} className="sr-only">
-        {c.instructions}
-      </p>
-      <p role="status" aria-live="polite" className="sr-only">
-        {announcement}
-      </p>
-      <EdgeActions.Provider value={edgeActions}>
-        <EdgeRoutes.Provider value={routes}>
-          <ReactFlow
-            nodes={nodes}
-            edges={rfEdges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onNodeClick={onNodeClick}
-            onConnect={handleConnect}
-            onConnectEnd={onConnectEnd}
-            connectionLineComponent={ConnectionLine}
-            isValidConnection={isValidConnection}
-            onPaneContextMenu={(event) => {
-              event.preventDefault();
-              cancelPress();
-              requestAddAt(event.clientX, event.clientY);
-            }}
-            nodeExtent={NODE_EXTENT}
-            edgesFocusable={false}
-            deleteKeyCode={["Delete", "Backspace"]}
-            selectionKeyCode={null}
-            multiSelectionKeyCode={null}
-            zoomOnDoubleClick={false}
-            minZoom={0.2}
-            maxZoom={2}
-            defaultViewport={initialViewport}
-            className="text-foreground"
-            ariaLabelConfig={{
-              "node.a11yDescription.default": c.nodeDescription,
-              "node.a11yDescription.keyboardDisabled": c.nodeDescription,
-              // Unused (our own arrow-key handler announces moves) but kept translated.
-              "node.a11yDescription.ariaLiveMessage": ({ x, y }) =>
-                fill(c.nodeMovedShort, { x, y }),
-              "edge.a11yDescription.default": c.edgeDescription,
-              "handle.ariaLabel": c.handle,
-              "controls.ariaLabel": c.controls,
-              "controls.zoomIn.ariaLabel": c.zoomIn,
-              "controls.zoomOut.ariaLabel": c.zoomOut,
-              "controls.fitView.ariaLabel": c.fitView,
-            }}
-          >
-            <Background
-              variant={BackgroundVariant.Dots}
-              gap={20}
-              size={1.25}
-              className="text-muted-foreground/35 [--xy-background-pattern-color:currentColor]"
-            />
-            <Controls duration={reducedMotion ? 0 : 200} narrow={narrow} />
-            <Panel position="top-center" className="pointer-events-none">
-              {/* Always in the DOM, so the polite announcement is picked up when text arrives. */}
-              <p
-                role="status"
-                aria-live="polite"
-                className={cn(
-                  "max-w-sm rounded-md border border-border bg-card px-3 py-2 text-center text-xs text-foreground shadow-sm",
-                  !notice && "sr-only",
-                )}
-              >
-                {notice}
-              </p>
-            </Panel>
-          </ReactFlow>
-        </EdgeRoutes.Provider>
-      </EdgeActions.Provider>
-    </section>
+    <CanvasActionsContext.Provider value={canvasActions}>
+      <section
+        ref={sectionRef}
+        aria-label={c.regionLabel}
+        aria-describedby={instructionsId}
+        onKeyDownCapture={onKeyDownCapture}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={cancelPress}
+        onPointerCancel={cancelPress}
+        className={cn(
+          "relative h-full w-full [-webkit-touch-callout:none]",
+          // React Flow reads these variables; point them at our tokens via currentColor.
+          "[--xy-background-color:transparent] [--xy-edge-stroke-selected:currentColor] [--xy-edge-stroke-width:1.5] [--xy-edge-stroke:currentColor]",
+          "[--xy-connectionline-stroke-width:1.5] [--xy-connectionline-stroke:currentColor]",
+          // React Flow's attribution stays (MIT; see the PR notes), in our muted tokens: its
+          // background via RF's own variable, its link via the panel's data-message attribute
+          // (Tailwind would read the underscores in `.react-flow__attribution` as spaces); padded
+          // to a 24px target (WCAG 2.5.8).
+          "[--xy-attribution-background-color:transparent] [&_[data-message]_a]:block [&_[data-message]_a]:px-1 [&_[data-message]_a]:py-1.5 [&_[data-message]_a]:text-muted-foreground",
+        )}
+      >
+        <p id={instructionsId} className="sr-only">
+          {c.instructions}
+        </p>
+        <p role="status" aria-live="polite" className="sr-only">
+          {announcement}
+        </p>
+        <EdgeActions.Provider value={edgeActions}>
+          <EdgeRoutes.Provider value={routes}>
+            <ReactFlow
+              nodes={nodes}
+              edges={rfEdges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeClick={onNodeClick}
+              onConnect={handleConnect}
+              onConnectEnd={onConnectEnd}
+              connectionLineComponent={ConnectionLine}
+              isValidConnection={isValidConnection}
+              onPaneContextMenu={(event) => {
+                event.preventDefault();
+                // press.current is non-null when the touch is still held down,
+                // meaning the browser fired contextmenu before our timer (Android
+                // long-press).  Cancel the timer to avoid opening the menu twice.
+                const isTouch = press.current !== null;
+                cancelPress();
+                requestAddAt(event.clientX, event.clientY, isTouch);
+              }}
+              nodeExtent={NODE_EXTENT}
+              edgesFocusable={false}
+              deleteKeyCode={["Delete", "Backspace"]}
+              selectionKeyCode={null}
+              multiSelectionKeyCode={null}
+              zoomOnDoubleClick={false}
+              minZoom={0.2}
+              maxZoom={2}
+              defaultViewport={initialViewport}
+              className="text-foreground"
+              ariaLabelConfig={{
+                "node.a11yDescription.default": c.nodeDescription,
+                "node.a11yDescription.keyboardDisabled": c.nodeDescription,
+                // Unused (our own arrow-key handler announces moves) but kept translated.
+                "node.a11yDescription.ariaLiveMessage": ({ x, y }) =>
+                  fill(c.nodeMovedShort, { x, y }),
+                "edge.a11yDescription.default": c.edgeDescription,
+                "handle.ariaLabel": c.handle,
+                "controls.ariaLabel": c.controls,
+                "controls.zoomIn.ariaLabel": c.zoomIn,
+                "controls.zoomOut.ariaLabel": c.zoomOut,
+                "controls.fitView.ariaLabel": c.fitView,
+              }}
+            >
+              <Background
+                variant={BackgroundVariant.Dots}
+                gap={20}
+                size={1.25}
+                className="text-muted-foreground/35 [--xy-background-pattern-color:currentColor]"
+              />
+              <Controls duration={reducedMotion ? 0 : 200} narrow={narrow} />
+              <Panel position="top-center" className="pointer-events-none">
+                {/* Always in the DOM, so the polite announcement is picked up when text arrives. */}
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className={cn(
+                    "max-w-sm rounded-md border border-border bg-card px-3 py-2 text-center text-xs text-foreground shadow-sm",
+                    !notice && "sr-only",
+                  )}
+                >
+                  {notice}
+                </p>
+              </Panel>
+            </ReactFlow>
+          </EdgeRoutes.Provider>
+        </EdgeActions.Provider>
+      </section>
+    </CanvasActionsContext.Provider>
   );
 }
 

@@ -26,6 +26,16 @@ const KIND_ICONS: Record<ServiceKind, LucideIcon> = {
   cache: MemoryStick,
 };
 
+/** Muted per-kind accent: border + background + icon color. */
+const KIND_COLORS: Record<ServiceKind, string> = {
+  web: "border-blue-500/25 bg-blue-500/10 text-blue-400 dark:text-blue-400",
+  service: "border-violet-500/25 bg-violet-500/10 text-violet-400 dark:text-violet-400",
+  worker: "border-amber-500/25 bg-amber-500/10 text-amber-400 dark:text-amber-400",
+  cron: "border-purple-500/25 bg-purple-500/10 text-purple-400 dark:text-purple-400",
+  database: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400 dark:text-emerald-400",
+  cache: "border-rose-500/25 bg-rose-500/10 text-rose-400 dark:text-rose-400",
+};
+
 const SOURCE_ICONS: Record<ServiceSourceType, LucideIcon> = {
   repo: GitBranch,
   image: Container,
@@ -38,7 +48,8 @@ export function KindIcon({ kind, className }: { kind: ServiceKind; className?: s
     <span
       aria-hidden="true"
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground",
+        "flex size-8 shrink-0 items-center justify-center rounded-md border",
+        KIND_COLORS[kind],
         className,
       )}
     >
@@ -84,15 +95,26 @@ export function ServiceStatusLabel({ service }: { service: CanvasService }) {
         <span className="flex size-2.5 items-center justify-center">
           <span
             aria-hidden="true"
-            className="size-1.5 rounded-full border border-muted-foreground"
+            className="size-1.5 rounded-full border border-muted-foreground/50"
           />
         </span>
         {t.project.canvas.notDeployed}
       </span>
     );
   }
+  const colorClass =
+    service.status === "failed"
+      ? "text-destructive"
+      : service.status === "sleeping"
+        ? "text-muted-foreground"
+        : "text-foreground";
   return (
-    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-foreground">
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium",
+        colorClass,
+      )}
+    >
       <span className="flex size-2.5 items-center justify-center">
         <StatusDot status={service.status} />
       </span>

@@ -171,10 +171,10 @@ describe("ProjectCanvasView", () => {
     const connections = within(sheet).getByRole("region", { name: "Connections" });
 
     // web → api exists already, so api isn't offered; postgres is.
-    const picker = within(connections).getByRole("combobox", { name: "Connect to" });
-    expect(within(picker).queryByRole("option", { name: "api" })).not.toBeInTheDocument();
-    expect(within(picker).queryByRole("option", { name: "web" })).not.toBeInTheDocument();
-    await user.selectOptions(picker, "postgres");
+    await user.click(within(connections).getByRole("button", { name: "postgres" }));
+    expect(screen.queryByRole("menuitem", { name: "api" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "web" })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("menuitem", { name: "postgres" }));
     await user.click(within(connections).getByRole("button", { name: "Add" }));
     expect(
       within(connections).getByRole("button", { name: "Remove connection from web to postgres" }),
@@ -214,8 +214,8 @@ describe("ProjectCanvasView", () => {
     const user = userEvent.setup();
     await screen.findByRole("list", { name: "Services" });
     await user.click(screen.getByRole("button", { name: "Add" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Service" }));
-    const dialog = await screen.findByRole("dialog", { name: "Add a service" });
+    await user.click(await screen.findByRole("menuitem", { name: "Docker" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add Docker service" });
     const name = within(dialog).getByRole("textbox", { name: "Service name" });
     expect(name).toHaveFocus();
 
@@ -229,8 +229,8 @@ describe("ProjectCanvasView", () => {
 
     await user.clear(name);
     await user.type(name, "billing-worker");
-    await user.selectOptions(within(dialog).getByRole("combobox", { name: "Type" }), "worker");
-    await user.click(within(dialog).getByRole("radio", { name: "Docker image" }));
+    await user.click(within(dialog).getByLabelText("Type"));
+    await user.click(await screen.findByRole("menuitem", { name: "Worker" }));
     const source = within(dialog).getByRole("textbox", { name: "Image name" });
     await user.type(source, "not an image");
     await user.click(within(dialog).getByRole("button", { name: "Add service" }));
@@ -269,15 +269,9 @@ describe("ProjectCanvasView", () => {
     await user.click(screen.getByRole("button", { name: "Add" }));
     await user.click(await screen.findByRole("menuitem", { name: "Domain" }));
     const dialog = await screen.findByRole("dialog", { name: "Add a domain" });
-    expect(within(dialog).getByRole("tab", { name: "Domain" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
     expect(within(dialog).getByRole("radio", { name: "Generate a Penelope domain" })).toBeChecked();
-    await user.selectOptions(
-      within(dialog).getByRole("combobox", { name: "Target service" }),
-      "api",
-    );
+    await user.click(within(dialog).getByLabelText("Target service"));
+    await user.click(await screen.findByRole("menuitem", { name: "api" }));
     const sub = within(dialog).getByRole("textbox", { name: "Subdomain" });
     expect((sub as HTMLInputElement).value).toMatch(/^api-[0-9a-f]{6}$/);
     await user.clear(sub);

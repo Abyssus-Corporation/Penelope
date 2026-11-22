@@ -3,12 +3,9 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { domainEdgeId } from "./domains";
-import { SELECT as FIELD_SELECT } from "./form-styles";
+import { Select } from "./Select";
 import { fill } from "./text";
 import type { CanvasDomain, CanvasService, ServiceEdge } from "./types";
-
-// Same field, but it shares a row with the Add button.
-const SELECT = FIELD_SELECT.replace("w-full", "min-w-0 flex-1");
 
 /**
  * The keyboard and single-pointer way to link services (the canvas drag is the
@@ -35,11 +32,10 @@ export function Connections({
   const s = useI18n().project.sheet;
   const d = useI18n().project.domain;
   const headingId = useId();
-  const selectId = useId();
   const [target, setTarget] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
-  const selectRef = useRef<HTMLSelectElement>(null);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
 
   const outgoing = edges.filter((edge) => edge.source === service.id);
   const domainIds = new Set(domains.map((domain) => domain.id));
@@ -80,7 +76,7 @@ export function Connections({
     onDisconnect(id);
     setAnnouncement(label);
     requestAnimationFrame(() => {
-      const focusable = next && next.isConnected ? next : selectRef.current;
+      const focusable = next && next.isConnected ? next : addButtonRef.current;
       focusable?.focus();
     });
   }
@@ -110,34 +106,34 @@ export function Connections({
       </p>
 
       <form onSubmit={add} className="mt-3">
-        <label htmlFor={selectId} className="text-xs text-muted-foreground">
-          {s.addLinkLabel}
-        </label>
-        <div className="mt-1 flex gap-2">
-          <select
-            ref={selectRef}
-            id={selectId}
-            value={choice}
-            disabled={candidates.length === 0}
-            onChange={(event) => setTarget(event.target.value)}
-            className={SELECT}
-          >
-            {candidates.length === 0 && <option value="">{s.noCandidates}</option>}
-            {candidates.map((other) => (
-              <option key={other.id} value={other.id}>
-                {other.name}
-              </option>
-            ))}
-          </select>
-          <Button
-            type="submit"
-            size="sm"
-            variant="outline"
-            disabled={!choice}
-            className="coarse:h-10"
-          >
-            {s.addLink}
-          </Button>
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">{s.addLinkLabel}</label>
+          <div className="flex gap-2">
+            {candidates.length === 0 ? (
+              <span className="flex h-8 flex-1 items-center rounded border border-input px-2 text-[13px] text-muted-foreground coarse:h-10">
+                {s.noCandidates}
+              </span>
+            ) : (
+              <div className="min-w-0 flex-1">
+                <Select
+                  value={choice}
+                  options={candidates.map((other) => ({ value: other.id, label: other.name }))}
+                  onChange={setTarget}
+                  disabled={candidates.length === 0}
+                />
+              </div>
+            )}
+            <Button
+              ref={addButtonRef}
+              type="submit"
+              size="sm"
+              variant="outline"
+              disabled={!choice}
+              className="coarse:h-10"
+            >
+              {s.addLink}
+            </Button>
+          </div>
         </div>
       </form>
 

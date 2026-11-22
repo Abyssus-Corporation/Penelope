@@ -32,6 +32,8 @@ export function validateServiceName(
 export function validateSource(type: ServiceSourceType, raw: string): SourceError | null {
   const value = raw.trim();
   if (!value) return "required";
+  // Dockerfile content has no length limit and no pattern to validate.
+  if (type === "dockerfile") return null;
   if (value.length > SOURCE_MAX_LENGTH) return "tooLong";
   if (!SOURCE_PATTERNS[type].test(value)) return "invalid";
   return null;

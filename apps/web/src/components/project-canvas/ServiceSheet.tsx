@@ -1,6 +1,6 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
-import { X } from "lucide-react";
+import { GitCommitHorizontal, KeyRound, X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { DialogOverlay } from "@/components/ui/dialog";
 import { useI18n } from "@/i18n";
@@ -73,7 +73,7 @@ export function ServiceSheet({
         {domain && (
           <DialogPrimitive.Content onCloseAutoFocus={onCloseAutoFocus} className={CONTENT}>
             <header className="flex items-start gap-3 border-b border-border px-5 pb-4 pr-14 pt-5">
-              <DomainIcon />
+              <DomainIcon className="size-8" />
               <div className="min-w-0 flex-1">
                 <DialogPrimitive.Title className="font-mono text-[15px] font-medium leading-6">
                   {/* 15px mono beside the icon at 320: ~22 characters per line. */}
@@ -143,10 +143,10 @@ export function ServiceSheet({
                       <LastDeploy service={service} className="text-sm text-foreground" />
                     </Row>
                   </dl>
-                  <Placeholder>{s.deploymentsEmpty}</Placeholder>
+                  <EmptyTab icon={GitCommitHorizontal}>{s.deploymentsEmpty}</EmptyTab>
                 </Tabs.Content>
                 <Tabs.Content value="variables" className={PANEL}>
-                  <Placeholder>{s.variablesEmpty}</Placeholder>
+                  <EmptyTab icon={KeyRound}>{s.variablesEmpty}</EmptyTab>
                 </Tabs.Content>
                 <Tabs.Content value="settings" className={PANEL}>
                   <dl className="space-y-4">
@@ -174,7 +174,7 @@ export function ServiceSheet({
                       onDisconnect={onDisconnect}
                     />
                   </div>
-                  <Placeholder>{s.settingsNote}</Placeholder>
+                  <p className="mt-5 text-xs text-muted-foreground">{s.settingsNote}</p>
                 </Tabs.Content>
               </div>
             </Tabs.Root>
@@ -194,10 +194,11 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Placeholder({ children }: { children: ReactNode }) {
+function EmptyTab({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
-    <p className="mt-5 rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-      {children}
-    </p>
+    <div className="mt-5 flex flex-col items-center gap-3 rounded-md border border-dashed border-border px-4 py-8 text-center">
+      <Icon size={18} strokeWidth={1.5} className="text-muted-foreground/50" aria-hidden="true" />
+      <p className="text-sm text-muted-foreground">{children}</p>
+    </div>
   );
 }

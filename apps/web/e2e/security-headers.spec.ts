@@ -609,30 +609,33 @@ test.describe("canvas on a dev-mode build under the production CSP", () => {
     await page.waitForTimeout(400);
     const area = (await canvas.boundingBox())!;
 
-    // Right-click on the background: the dialog opens; the card lands where the click was.
+    // Right-click on the background: the context menu opens; picking Repository opens the dialog.
     const click = { x: area.x + 260, y: area.y + area.height - 120 };
     await page.mouse.click(click.x, click.y, { button: "right" });
-    const dialog = page.getByRole("dialog", { name: "Add a service" });
-    await expect(dialog.getByRole("textbox", { name: "Service name" })).toBeFocused();
-    await dialog.getByRole("button", { name: "Add service" }).click();
-    await expect(dialog.getByText("Service name is required.")).toBeVisible();
-    await dialog.getByRole("textbox", { name: "Service name" }).fill("worker");
-    await dialog.getByRole("textbox", { name: "Repository name" }).fill("acme/worker");
-    await dialog.getByRole("button", { name: "Add service" }).click();
-    await expect(dialog).toBeHidden();
+    await page.getByRole("menuitem", { name: "Repository" }).click();
+    const repoDialog = page.getByRole("dialog", { name: "Add from repository" });
+    await expect(repoDialog.getByRole("textbox", { name: "Service name" })).toBeFocused();
+    await repoDialog.getByRole("button", { name: "Add service" }).click();
+    await expect(repoDialog.getByText("Service name is required.")).toBeVisible();
+    await repoDialog.getByRole("textbox", { name: "Service name" }).fill("worker");
+    await repoDialog.getByRole("textbox", { name: "Repository name" }).fill("acme/worker");
+    await repoDialog.getByRole("button", { name: "Add service" }).click();
+    await expect(repoDialog).toBeHidden();
     const worker = canvas.locator('.react-flow__node[data-id="worker"]');
     await expect(worker).toBeFocused();
     const workerBox = (await worker.boundingBox())!;
     expect(Math.abs(workerBox.x + workerBox.width / 2 - click.x)).toBeLessThan(40);
 
-    // Toolbar Add ▸ Service: a free spot in the middle of the view, overlapping nothing.
+    // Toolbar Add ▸ Docker: a free spot in the middle of the view, overlapping nothing.
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    await page.getByRole("menuitem", { name: "Service" }).click();
-    await dialog.getByRole("textbox", { name: "Service name" }).fill("cache-warmer");
-    await dialog.getByRole("combobox", { name: "Type" }).selectOption("cron");
-    await dialog.getByRole("radio", { name: "Dockerfile" }).check();
-    await dialog.getByRole("textbox", { name: "Dockerfile path" }).fill("jobs/warm/Dockerfile");
-    await dialog.getByRole("button", { name: "Add service" }).click();
+    await page.getByRole("menuitem", { name: "Docker" }).click();
+    const dockerDialog = page.getByRole("dialog", { name: "Add Docker service" });
+    await dockerDialog.getByRole("textbox", { name: "Service name" }).fill("cache-warmer");
+    await dockerDialog.getByLabel("Type").click();
+    await page.getByRole("menuitem", { name: "Cron job" }).click();
+    await dockerDialog.getByRole("button", { name: "Dockerfile" }).click();
+    await dockerDialog.getByRole("textbox", { name: "Dockerfile" }).fill("FROM alpine:3");
+    await dockerDialog.getByRole("button", { name: "Add service" }).click();
     await expect(nodes).toHaveCount(6);
     await expect(canvas.locator('.react-flow__node[data-id="cache-warmer"]')).toBeInViewport();
     expect(await overlaps(nodes)).toEqual([]);
@@ -728,7 +731,8 @@ test.describe("canvas on a dev-mode build under the production CSP", () => {
 
     // Generated: "<service>-<hash>.penelope.local", verified with HTTPS at once, linked.
     let dialog = await addDomain();
-    await dialog.getByRole("combobox", { name: "Target service" }).selectOption("web");
+    await dialog.getByLabel("Target service").click();
+    await page.getByRole("menuitem", { name: "web" }).click();
     await expect(dialog.getByRole("textbox", { name: "Subdomain" })).toHaveValue(
       /^web-[0-9a-f]{6}$/,
     );
@@ -871,7 +875,8 @@ test.describe("canvas on a dev-mode build under the production CSP", () => {
     await page.keyboard.press("ArrowRight");
     await expect(sheet.getByRole("tab", { name: "Settings" })).toBeFocused();
     const connections = sheet.getByRole("region", { name: "Connections" });
-    await connections.getByRole("combobox", { name: "Connect to" }).selectOption("redis");
+    await connections.locator('button[aria-haspopup="menu"]').click();
+    await page.getByRole("menuitem", { name: "redis" }).click();
     await connections.getByRole("button", { name: "Add" }).press("Enter");
     await expect(
       connections.getByRole("button", { name: "Remove connection from web to redis" }),
@@ -959,7 +964,8 @@ test.describe("canvas on a dev-mode build under the production CSP", () => {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [point] });
     await phone.waitForTimeout(800);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-    await expect(phone.getByRole("dialog", { name: "Add a service" })).toBeVisible();
+    await phone.getByRole("menuitem", { name: "Repository" }).click();
+    await expect(phone.getByRole("dialog", { name: "Add from repository" })).toBeVisible();
 
     assertNoSecurityViolations(await phoneSignals.readViolations());
     expect(phoneSignals.thirdParty.map((request) => request.url())).toEqual([]);

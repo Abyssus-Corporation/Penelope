@@ -31,9 +31,8 @@ describe("service source", () => {
     ["image", "postgres:16-alpine", null],
     ["image", "ghcr.io/acme/billing:1.2", null],
     ["image", "Postgres", "invalid"],
-    ["dockerfile", "services/api/Dockerfile", null],
-    ["dockerfile", "/etc/Dockerfile", "invalid"],
-    ["dockerfile", "", "required"],
+    ["dockerfile", "FROM node:22-alpine\nRUN npm install", null],
+    ["dockerfile", "   ", "required"],
     ["image", "x".repeat(201), "tooLong"],
   ] as const)("%s %j → %s", (type, value, error) => {
     expect(validateSource(type, value)).toBe(error);
